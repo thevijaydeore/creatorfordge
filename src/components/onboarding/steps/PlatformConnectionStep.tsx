@@ -3,10 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { Link, Upload, Trash2, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import { useOnboardingStore } from '@/store/onboardingStore';
 import type { ContentSample } from '@/types/onboarding';
 
@@ -31,7 +30,13 @@ export function PlatformConnectionStep() {
   } = useOnboardingStore();
   
   const [activeTab, setActiveTab] = useState(profileData.platforms[0] || 'twitter');
-  const [newSample, setNewSample] = useState({ content: '', url: '' });
+  const [newSample, setNewSample] = useState({ content: '' });
+  
+  const platformHeadings = {
+    twitter: "Top 20 Twitter Content Drafts",
+    linkedin: "Top 20 LinkedIn Content Drafts", 
+    instagram: "Top 20 Instagram Content Drafts"
+  };
 
   const handleAddSample = () => {
     if (!newSample.content.trim()) return;
@@ -40,7 +45,6 @@ export function PlatformConnectionStep() {
       id: Date.now().toString(),
       platform: activeTab,
       content: newSample.content,
-      url: newSample.url || undefined,
       engagementMetrics: {
         likes: Math.floor(Math.random() * 1000),
         comments: Math.floor(Math.random() * 100),
@@ -50,7 +54,11 @@ export function PlatformConnectionStep() {
     };
     
     addContentSample(sample);
-    setNewSample({ content: '', url: '' });
+    setNewSample({ content: '' });
+  };
+
+  const handleSkip = () => {
+    nextStep();
   };
 
   const getSamplesForPlatform = (platform: string) => 
@@ -118,11 +126,11 @@ export function PlatformConnectionStep() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="capitalize">
-                {activeTab} Content Samples
+              <CardTitle>
+                {platformHeadings[activeTab as keyof typeof platformHeadings]}
               </CardTitle>
               <CardDescription>
-                Add your best-performing content to train your AI writing style
+                Paste your top-performing {activeTab} content here...
               </CardDescription>
             </div>
             <div className={`w-3 h-3 rounded-full ${
@@ -144,17 +152,6 @@ export function PlatformConnectionStep() {
                   <p className="text-sm text-gray-300 line-clamp-3">
                     {sample.content}
                   </p>
-                  {sample.url && (
-                    <a 
-                      href={sample.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-cyan-400 text-xs hover:underline flex items-center mt-2"
-                    >
-                      <Link className="w-3 h-3 mr-1" />
-                      View original post
-                    </a>
-                  )}
                 </div>
                 <Button
                   size="sm"
@@ -186,45 +183,23 @@ export function PlatformConnectionStep() {
                 <Label htmlFor="content">Content</Label>
                 <Textarea
                   id="content"
-                  placeholder="Paste your high-performing content here..."
+                  placeholder={`Paste your top-performing ${activeTab} content here...`}
                   value={newSample.content}
-                  onChange={(e) => setNewSample(prev => ({ ...prev, content: e.target.value }))}
-                  className="bg-gray-800/50 border-gray-700 min-h-[100px]"
+                  onChange={(e) => setNewSample({ content: e.target.value })}
+                  className="bg-gray-800/50 border-gray-700 min-h-[200px] resize-y"
                 />
-              </div>
-              
-              <div>
-                <Label htmlFor="url">URL (optional)</Label>
-                <Input
-                  id="url"
-                  placeholder="https://..."
-                  value={newSample.url}
-                  onChange={(e) => setNewSample(prev => ({ ...prev, url: e.target.value }))}
-                  className="bg-gray-800/50 border-gray-700"
-                />
+                <div className="text-xs text-gray-400 mt-1">
+                  {newSample.content.length} characters
+                </div>
               </div>
               
               <Button
                 onClick={handleAddSample}
                 disabled={!newSample.content.trim()}
-                className="w-full"
-                variant="outline"
+                className="w-full bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Content Sample
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Upload Alternative */}
-          <Card className="bg-gray-800/30 border-gray-700 border-dashed">
-            <CardContent className="p-6 text-center">
-              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm text-gray-400 mb-3">
-                Or upload a CSV file with your content data
-              </p>
-              <Button variant="outline" size="sm">
-                Upload CSV
               </Button>
             </CardContent>
           </Card>
@@ -277,12 +252,23 @@ export function PlatformConnectionStep() {
         <Button type="button" variant="outline" onClick={prevStep}>
           Back
         </Button>
-        <Button 
-          onClick={handleContinue} 
-          disabled={!allPlatformsReady || isLoading}
-        >
-          {isLoading ? 'Analyzing...' : 'Continue to Voice Training'}
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            onClick={handleSkip}
+            className="hover:bg-gray-800/50"
+          >
+            Skip for Now
+          </Button>
+          <Button 
+            onClick={handleContinue} 
+            disabled={!allPlatformsReady || isLoading}
+            className="bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-600 hover:to-violet-600"
+          >
+            {isLoading ? 'Analyzing...' : 'Continue to Voice Training'}
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
