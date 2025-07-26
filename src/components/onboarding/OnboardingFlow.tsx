@@ -1,15 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useOnboardingStore } from '@/store/onboardingStore';
-import { WelcomeStep } from './steps/WelcomeStep';
 import { ProfileSetupStep } from './steps/ProfileSetupStep';
 import { PlatformConnectionStep } from './steps/PlatformConnectionStep';
 import { VoiceTrainingStep } from './steps/VoiceTrainingStep';
 import { DeliveryPreferencesStep } from './steps/DeliveryPreferencesStep';
 
 const steps = [
-  { id: 1, title: 'Welcome', description: 'Account creation' },
   { id: 2, title: 'Profile', description: 'Creator setup' },
   { id: 3, title: 'Content', description: 'Sample analysis' },
   { id: 4, title: 'Voice Training', description: 'AI learning' },
@@ -17,14 +17,27 @@ const steps = [
 ];
 
 export function OnboardingFlow() {
-  const { currentStep } = useOnboardingStore();
+  const { currentStep, setStep } = useOnboardingStore();
+  const [searchParams] = useSearchParams();
   
-  const progress = (currentStep / steps.length) * 100;
+  // Handle step parameter from URL (coming from signup)
+  useEffect(() => {
+    const stepParam = searchParams.get('step');
+    if (stepParam) {
+      const step = parseInt(stepParam);
+      if (step >= 2 && step <= 5) {
+        setStep(step);
+      }
+    } else if (currentStep === 1) {
+      // If no step parameter and we're on step 1, start from step 2
+      setStep(2);
+    }
+  }, [searchParams, setStep, currentStep]);
+  
+  const progress = ((currentStep - 1) / steps.length) * 100;
 
   const renderStep = () => {
     switch (currentStep) {
-      case 1:
-        return <WelcomeStep />;
       case 2:
         return <ProfileSetupStep />;
       case 3:
@@ -34,7 +47,7 @@ export function OnboardingFlow() {
       case 5:
         return <DeliveryPreferencesStep />;
       default:
-        return <WelcomeStep />;
+        return <ProfileSetupStep />;
     }
   };
 
@@ -61,7 +74,7 @@ export function OnboardingFlow() {
                 </Badge>
               </div>
               <div className="text-sm text-gray-400">
-                Step {currentStep} of {steps.length}
+                Step {currentStep - 1} of {steps.length}
               </div>
             </div>
             
@@ -69,7 +82,7 @@ export function OnboardingFlow() {
             <div className="space-y-2">
               <Progress value={progress} className="h-2" />
               <div className="flex justify-between text-xs">
-                {steps.map((step) => (
+                {steps.map((step, index) => (
                   <div
                     key={step.id}
                     className={`flex flex-col items-center ${
@@ -83,7 +96,7 @@ export function OnboardingFlow() {
                           ? 'bg-cyan-500 text-white'
                           : 'bg-gray-700 text-gray-400'
                     }`}>
-                      {step.id < currentStep ? '✓' : step.id}
+                      {step.id < currentStep ? '✓' : index + 1}
                     </div>
                     <span className="font-medium">{step.title}</span>
                     <span className="text-gray-500">{step.description}</span>

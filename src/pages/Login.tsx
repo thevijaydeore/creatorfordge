@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -213,7 +213,7 @@ const LoginPage: React.FC = () => {
             </div>
             <div className="mt-6 text-center text-sm text-gray-400">
               Don&apos;t have an account?{' '}
-              <a href="#" className="text-violet-400 hover:underline font-medium focus:underline focus:outline-none">Sign up</a>
+              <Link to="/signup" className="text-violet-400 hover:underline font-medium focus:underline focus:outline-none">Sign up</Link>
             </div>
             <div className="mt-4 flex flex-col items-center space-y-1 text-xs text-gray-500">
               <a href="#" className="hover:underline focus:underline focus:outline-none">Terms of Service</a>
