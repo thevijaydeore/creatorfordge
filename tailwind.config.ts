@@ -61,7 +61,32 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				creator: {
+					cyan: 'hsl(var(--creator-cyan))',
+					violet: 'hsl(var(--creator-violet))',
+					emerald: 'hsl(var(--creator-emerald))',
+					orange: 'hsl(var(--creator-orange))'
+				},
+				glass: {
+					primary: 'hsl(var(--glass-primary))',
+					secondary: 'hsl(var(--glass-secondary))',
+					accent: 'hsl(var(--glass-accent))'
 				}
+			},
+			backgroundImage: {
+				'creator-gradient': 'var(--gradient-creator-primary)',
+				'creator-gradient-secondary': 'var(--gradient-creator-secondary)',
+				'glass-gradient': 'var(--gradient-glass)'
+			},
+			boxShadow: {
+				'glass': 'var(--shadow-glass)',
+				'glow': 'var(--shadow-glow)',
+				'creator': 'var(--shadow-creator)'
+			},
+			transitionTimingFunction: {
+				'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+				'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
