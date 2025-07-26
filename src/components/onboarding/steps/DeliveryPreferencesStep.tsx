@@ -9,6 +9,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, MessageSquare, Clock, Calendar, Sparkles, CheckCircle, Rocket } from 'lucide-react';
 import { useOnboardingStore } from '@/store/onboardingStore';
 
@@ -73,6 +74,7 @@ export function DeliveryPreferencesStep() {
     isLoading 
   } = useOnboardingStore();
   
+  const navigate = useNavigate();
   const [isGeneratingFirstDraft, setIsGeneratingFirstDraft] = useState(false);
   const [firstDraftGenerated, setFirstDraftGenerated] = useState(false);
 
@@ -94,6 +96,11 @@ export function DeliveryPreferencesStep() {
     
     // Complete onboarding
     await completeOnboarding();
+    
+    // Redirect to dashboard after a brief delay to show success state
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 2000);
   };
 
   const toggleChannel = (channelValue: string) => {
@@ -368,7 +375,7 @@ export function DeliveryPreferencesStep() {
           </Button>
           <Button 
             type="submit" 
-            disabled={isGeneratingFirstDraft || firstDraftGenerated || isLoading}
+            disabled={isGeneratingFirstDraft || isLoading}
             className="bg-gradient-to-r from-cyan-600 to-violet-600 hover:from-cyan-700 hover:to-violet-700"
           >
             {isGeneratingFirstDraft ? (
