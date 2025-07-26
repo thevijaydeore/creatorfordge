@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { CreatorSidebar } from "@/components/creator/sidebar";
 import { AnimatedBackground } from "@/components/ui/animated-background";
@@ -16,6 +17,7 @@ import {
 import heroImage from '@/assets/creator-hero.jpg';
 
 const Index = () => {
+  const navigate = useNavigate();
   return (
     <SidebarProvider>
       <AnimatedBackground />
@@ -69,8 +71,11 @@ const Index = () => {
                     <button className="bg-creator-gradient px-6 py-3 rounded-lg font-medium text-primary-foreground hover-lift">
                       Review Drafts
                     </button>
-                    <button className="glass-button px-6 py-3 font-medium">
-                      View Insights
+                    <button 
+                      onClick={() => navigate('/onboarding')}
+                      className="glass-button px-6 py-3 font-medium"
+                    >
+                      Try Onboarding
                     </button>
                   </div>
                 </div>
