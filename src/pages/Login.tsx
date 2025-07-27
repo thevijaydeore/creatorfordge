@@ -46,7 +46,7 @@ const LoginPage: React.FC = () => {
       }
       setSuccess(true);
       setTimeout(() => {
-        navigate('/'); // Redirect to dashboard
+        navigate('/dashboard'); // Redirect to dashboard
       }, 1000);
     } catch (e: any) {
       setError('An unexpected error occurred. Please try again.');
@@ -56,7 +56,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGuest = () => {
-    navigate('/'); // Guest flow: redirect to dashboard
+    navigate('/dashboard'); // Guest flow: redirect to dashboard
   };
 
   return (
