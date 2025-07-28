@@ -14,7 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content_samples: {
+        Row: {
+          content: string
+          created_at: string
+          engagement_metrics: Json | null
+          id: string
+          platform: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          engagement_metrics?: Json | null
+          id?: string
+          platform: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          engagement_metrics?: Json | null
+          id?: string
+          platform?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      creator_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          creator_handle: string | null
+          creator_type: string | null
+          email: string
+          follower_range: string | null
+          full_name: string | null
+          id: string
+          industry: string | null
+          onboarding_completed: boolean | null
+          platforms: string[] | null
+          settings: Json | null
+          subscription_tier: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          creator_handle?: string | null
+          creator_type?: string | null
+          email: string
+          follower_range?: string | null
+          full_name?: string | null
+          id?: string
+          industry?: string | null
+          onboarding_completed?: boolean | null
+          platforms?: string[] | null
+          settings?: Json | null
+          subscription_tier?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          creator_handle?: string | null
+          creator_type?: string | null
+          email?: string
+          follower_range?: string | null
+          full_name?: string | null
+          id?: string
+          industry?: string | null
+          onboarding_completed?: boolean | null
+          platforms?: string[] | null
+          settings?: Json | null
+          subscription_tier?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      delivery_preferences: {
+        Row: {
+          channels: string[] | null
+          created_at: string
+          delivery_time: string | null
+          frequency: string | null
+          id: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string
+          delivery_time?: string | null
+          frequency?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string
+          delivery_time?: string | null
+          frequency?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_steps: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean | null
+          step_description: string | null
+          step_name: string
+          step_order: number
+          step_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          step_description?: string | null
+          step_name: string
+          step_order: number
+          step_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          step_description?: string | null
+          step_name?: string
+          step_order?: number
+          step_type?: string
+        }
+        Relationships: []
+      }
+      user_onboarding_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_completed: boolean | null
+          onboarding_step_id: string
+          step_data: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean | null
+          onboarding_step_id: string
+          step_data?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean | null
+          onboarding_step_id?: string
+          step_data?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_onboarding_progress_onboarding_step_id_fkey"
+            columns: ["onboarding_step_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
