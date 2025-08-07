@@ -164,6 +164,98 @@ export type Database = {
         }
         Relationships: []
       }
+      source_analytics: {
+        Row: {
+          analytics_data: Json | null
+          avg_reach: number | null
+          created_at: string
+          date: string
+          engagement_rate: number | null
+          id: string
+          posts_analyzed: number | null
+          source_id: string
+          top_performing_content: string | null
+        }
+        Insert: {
+          analytics_data?: Json | null
+          avg_reach?: number | null
+          created_at?: string
+          date?: string
+          engagement_rate?: number | null
+          id?: string
+          posts_analyzed?: number | null
+          source_id: string
+          top_performing_content?: string | null
+        }
+        Update: {
+          analytics_data?: Json | null
+          avg_reach?: number | null
+          created_at?: string
+          date?: string
+          engagement_rate?: number | null
+          id?: string
+          posts_analyzed?: number | null
+          source_id?: string
+          top_performing_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_analytics_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sources: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          metrics: Json | null
+          source_config: Json | null
+          source_name: string
+          source_type: string
+          source_url: string | null
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          metrics?: Json | null
+          source_config?: Json | null
+          source_name: string
+          source_type: string
+          source_url?: string | null
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          metrics?: Json | null
+          source_config?: Json | null
+          source_name?: string
+          source_type?: string
+          source_url?: string | null
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_onboarding_progress: {
         Row: {
           completed_at: string | null

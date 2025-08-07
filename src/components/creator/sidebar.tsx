@@ -8,7 +8,8 @@ import {
   Zap,
   BarChart3,
   Calendar,
-  Users
+  Users,
+  Rss
 } from 'lucide-react';
 import {
   Sidebar,
@@ -23,7 +24,8 @@ import {
 } from "@/components/ui/sidebar";
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Sources', href: '/sources', icon: Rss },
   { name: 'AI Studio', href: '/studio', icon: Sparkles },
   { name: 'Pulse Feed', href: '/pulse', icon: Zap },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
