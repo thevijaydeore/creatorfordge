@@ -1,30 +1,59 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Twitter } from "lucide-react";
+import { useSources } from "@/hooks/useSources";
 
 export function AddTwitterSource() {
-  const handleTwitterConnect = () => {
-    // TODO: Implement Twitter OAuth flow
-    // For now, show a message that it needs API configuration
-    alert("Twitter integration requires API keys. This will be implemented with OAuth flow.");
+  const [username, setUsername] = useState("");
+  const { createSource, isCreating } = useSources();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim()) return;
+
+    const cleanUsername = username.trim().replace('@', '');
+    
+    createSource({
+      source_type: 'twitter',
+      source_name: `@${cleanUsername}`,
+      source_url: `https://twitter.com/${cleanUsername}`,
+      source_config: { username: cleanUsername },
+    });
+
+    setUsername("");
   };
 
   return (
-    <div className="text-center py-6">
-      <Twitter className="h-12 w-12 mx-auto mb-4 text-blue-500" />
-      <h3 className="text-lg font-medium mb-2">Connect Twitter Account</h3>
-      <p className="text-muted-foreground mb-4">
-        Authorize access to analyze your Twitter posts and engagement
-      </p>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="text-center mb-4">
+        <Twitter className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+        <h3 className="text-lg font-medium">Track Twitter User</h3>
+        <p className="text-sm text-muted-foreground">
+          Add a Twitter username to analyze their posts and engagement
+        </p>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="twitter-username">Twitter Username</Label>
+        <Input
+          id="twitter-username"
+          placeholder="username (without @)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+      </div>
+      
       <Button 
-        className="w-full max-w-sm"
-        onClick={handleTwitterConnect}
+        type="submit" 
+        className="w-full"
+        disabled={isCreating || !username.trim()}
       >
         <Twitter className="h-4 w-4 mr-2" />
-        Connect Twitter Account
+        {isCreating ? "Adding..." : "Add Twitter Source"}
       </Button>
-      <p className="text-xs text-muted-foreground mt-2">
-        We only read your public posts and engagement metrics
-      </p>
-    </div>
+    </form>
   );
 }
