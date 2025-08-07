@@ -10,6 +10,7 @@ import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import Sources from "./pages/Sources";
 import Delivery from "./pages/Delivery";
+import Settings from "./pages/Settings";
 import { AppLayout } from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
           <Route path="/sources" element={<AppLayout><Sources /></AppLayout>} />
           <Route path="/delivery" element={<AppLayout><Delivery /></AppLayout>} />
+          <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
