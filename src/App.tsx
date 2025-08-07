@@ -9,6 +9,7 @@ import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import Sources from "./pages/Sources";
+import Drafts from "./pages/Drafts";
 import Delivery from "./pages/Delivery";
 import Settings from "./pages/Settings";
 import VoiceTraining from "./pages/VoiceTraining";
@@ -31,6 +32,7 @@ const App = () => (
           {/* App routes with sidebar layout */}
           <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
           <Route path="/sources" element={<AppLayout><Sources /></AppLayout>} />
+          <Route path="/drafts" element={<AppLayout><Drafts /></AppLayout>} />
           <Route path="/delivery" element={<AppLayout><Delivery /></AppLayout>} />
           <Route path="/voice-training" element={<AppLayout><VoiceTraining /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />

@@ -10,6 +10,7 @@ import {
   Calendar,
   Users,
   Rss,
+  FileText,
   Send
 } from 'lucide-react';
 import {
@@ -27,9 +28,9 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sources', href: '/sources', icon: Rss },
+  { name: 'Drafts', href: '/drafts', icon: FileText },
   { name: 'Delivery', href: '/delivery', icon: Send },
   { name: 'Voice Training', href: '/voice-training', icon: Sparkles },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

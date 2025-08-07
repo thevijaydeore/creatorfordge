@@ -134,6 +134,48 @@ export type Database = {
         }
         Relationships: []
       }
+      drafts: {
+        Row: {
+          content: Json
+          content_type: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          platform: string
+          scheduled_for: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          content_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          platform: string
+          scheduled_for?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          content_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          platform?: string
+          scheduled_for?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_steps: {
         Row: {
           created_at: string
