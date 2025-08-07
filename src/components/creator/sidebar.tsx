@@ -74,7 +74,7 @@ export function CreatorSidebar() {
                         `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                           navActive || isActive(item.href)
                             ? 'bg-sidebar-accent text-sidebar-primary border border-sidebar-primary/20'
-                            : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                            : 'text-white hover:bg-sidebar-accent/50 hover:text-white'
                         }`
                       }
                     >
