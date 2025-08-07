@@ -28,12 +28,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sources', href: '/sources', icon: Rss },
   { name: 'Delivery', href: '/delivery', icon: Send },
-  { name: 'AI Studio', href: '/studio', icon: Sparkles },
-  { name: 'Pulse Feed', href: '/pulse', icon: Zap },
+  { name: 'Voice Training', href: '/voice-training', icon: Sparkles },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Trends', href: '/trends', icon: TrendingUp },
-  { name: 'Schedule', href: '/schedule', icon: Calendar },
-  { name: 'Audience', href: '/audience', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
