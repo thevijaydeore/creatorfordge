@@ -35,14 +35,14 @@ const navigation = [
 ];
 
 export function CreatorSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpen } = useSidebar();
   const location = useLocation();
   const collapsed = state === 'collapsed';
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
       <SidebarContent className="bg-sidebar border-r border-sidebar-border">
         {/* Logo */}
         <div className="p-6 border-b border-sidebar-border">

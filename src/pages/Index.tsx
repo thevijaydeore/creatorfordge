@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { CreatorSidebar } from "@/components/creator/sidebar";
+
+
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { MetricCard } from "@/components/creator/metric-card";
 import { ContentPipeline } from "@/components/creator/content-pipeline";
@@ -19,12 +19,12 @@ import heroImage from '@/assets/creator-hero.jpg';
 const Index = () => {
   const navigate = useNavigate();
   return (
-    <SidebarProvider>
+    <>
       <AnimatedBackground />
-      <div className="min-h-screen flex w-full">
-        <CreatorSidebar />
+      
         
-        <main className="flex-1 overflow-auto">
+        
+        
           {/* Header */}
           <header className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-10">
             <div className="flex items-center justify-between px-6 py-4">
@@ -191,13 +191,12 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground">
                     87% voice similarity achieved. Review 3 more drafts to reach 90%+ accuracy.
                   </p>
-                </div>
               </div>
             </div>
           </div>
-        </main>
+        
       </div>
-    </SidebarProvider>
+    </>
   );
 };
 
