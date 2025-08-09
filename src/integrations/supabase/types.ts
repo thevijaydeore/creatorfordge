@@ -176,6 +176,68 @@ export type Database = {
         }
         Relationships: []
       }
+      ingested_contents: {
+        Row: {
+          content_html: string | null
+          content_md: string | null
+          created_at: string
+          fetched_at: string
+          hash: string | null
+          id: string
+          metadata: Json
+          published_at: string | null
+          raw_content: string | null
+          source_id: string
+          status: string
+          title: string | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          content_html?: string | null
+          content_md?: string | null
+          created_at?: string
+          fetched_at?: string
+          hash?: string | null
+          id?: string
+          metadata?: Json
+          published_at?: string | null
+          raw_content?: string | null
+          source_id: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          content_html?: string | null
+          content_md?: string | null
+          created_at?: string
+          fetched_at?: string
+          hash?: string | null
+          id?: string
+          metadata?: Json
+          published_at?: string | null
+          raw_content?: string | null
+          source_id?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingested_contents_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_steps: {
         Row: {
           created_at: string
@@ -252,7 +314,9 @@ export type Database = {
       }
       sources: {
         Row: {
+          category: string | null
           created_at: string
+          credibility_score: number | null
           id: string
           is_active: boolean | null
           last_sync_at: string | null
@@ -267,7 +331,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
+          credibility_score?: number | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
@@ -282,7 +348,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
+          credibility_score?: number | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
@@ -297,6 +365,131 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      topic_research: {
+        Row: {
+          audience_insights: Json
+          cached_until: string | null
+          competitor_analysis: Json
+          content_angles: string[]
+          created_at: string
+          credibility_score: number
+          depth_level: string
+          hashtags: string[]
+          id: string
+          key_stats: Json
+          sources: Json
+          summary: string | null
+          topic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience_insights?: Json
+          cached_until?: string | null
+          competitor_analysis?: Json
+          content_angles?: string[]
+          created_at?: string
+          credibility_score?: number
+          depth_level: string
+          hashtags?: string[]
+          id?: string
+          key_stats?: Json
+          sources?: Json
+          summary?: string | null
+          topic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience_insights?: Json
+          cached_until?: string | null
+          competitor_analysis?: Json
+          content_angles?: string[]
+          created_at?: string
+          credibility_score?: number
+          depth_level?: string
+          hashtags?: string[]
+          id?: string
+          key_stats?: Json
+          sources?: Json
+          summary?: string | null
+          topic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_research_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topics: {
+        Row: {
+          cluster_id: string | null
+          confidence_score: number
+          created_at: string
+          description: string | null
+          id: string
+          is_trending: boolean
+          keywords: string[]
+          source_content_id: string
+          title: string
+          topic_type: string | null
+          trend_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cluster_id?: string | null
+          confidence_score?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_trending?: boolean
+          keywords?: string[]
+          source_content_id: string
+          title: string
+          topic_type?: string | null
+          trend_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cluster_id?: string | null
+          confidence_score?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_trending?: boolean
+          keywords?: string[]
+          source_content_id?: string
+          title?: string
+          topic_type?: string | null
+          trend_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_source_content_id_fkey"
+            columns: ["source_content_id"]
+            isOneToOne: false
+            referencedRelation: "ingested_contents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_onboarding_progress: {
         Row: {
