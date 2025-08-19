@@ -14,28 +14,31 @@ import {
   Clock, 
   Send, 
   Settings, 
-  Plus,
-  X,
   CheckCircle
 } from "lucide-react";
 import { format, addDays, isSameDay } from "date-fns";
 import { WeeklyScheduleGrid } from "./WeeklyScheduleGrid";
+import { useDeliveryScheduler, type DeliveryPlatform, type DeliveryContentType } from "@/hooks/useDeliveryScheduler";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ScheduledDelivery {
   id: string;
   date: Date;
   time: string;
-  platform: string;
-  contentType: string;
+  platform: DeliveryPlatform;
+  contentType: DeliveryContentType;
   status: 'scheduled' | 'pending_approval' | 'sent' | 'failed';
   draft?: any;
 }
 
 export function DeliveryScheduler() {
+  const { user } = useAuth();
+  const { scheduleDelivery, isScheduling } = useDeliveryScheduler();
+  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState("09:00");
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["linkedin"]);
-  const [contentType, setContentType] = useState("text_post");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<DeliveryPlatform[]>(["linkedin"]);
+  const [contentType, setContentType] = useState<DeliveryContentType>("post");
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [customPrompt, setCustomPrompt] = useState("");
   const [recurringSchedule, setRecurringSchedule] = useState(false);
@@ -56,7 +59,7 @@ export function DeliveryScheduler() {
       date: new Date(),
       time: "09:00",
       platform: "linkedin",
-      contentType: "text_post",
+      contentType: "post",
       status: "scheduled"
     },
     {
@@ -64,27 +67,31 @@ export function DeliveryScheduler() {
       date: addDays(new Date(), 1),
       time: "14:00",
       platform: "twitter",
-      contentType: "text_post",
+      contentType: "post",
       status: "pending_approval"
     }
   ]);
 
-  const platforms = [
+  const platforms: Array<{ id: DeliveryPlatform; name: string; color: string }> = [
     { id: "linkedin", name: "LinkedIn", color: "bg-blue-100 text-blue-800" },
     { id: "twitter", name: "Twitter", color: "bg-sky-100 text-sky-800" },
     { id: "instagram", name: "Instagram", color: "bg-pink-100 text-pink-800" },
-    { id: "facebook", name: "Facebook", color: "bg-indigo-100 text-indigo-800" }
+    { id: "facebook", name: "Facebook", color: "bg-indigo-100 text-indigo-800" },
+    { id: "youtube", name: "YouTube", color: "bg-red-100 text-red-800" },
+    { id: "tiktok", name: "TikTok", color: "bg-black text-white" }
   ];
 
-  const contentTypes = [
-    { id: "text_post", name: "Text Post" },
-    { id: "image_post", name: "Image Post" },
-    { id: "video_post", name: "Video Post" },
-    { id: "article", name: "Article" },
-    { id: "thread", name: "Thread" }
+  const contentTypes: Array<{ id: DeliveryContentType; name: string }> = [
+    { id: "post", name: "Text Post" },
+    { id: "thread", name: "Thread" },
+    { id: "story", name: "Story" },
+    { id: "reel", name: "Reel" },
+    { id: "video", name: "Video" },
+    { id: "carousel", name: "Carousel" },
+    { id: "article", name: "Article" }
   ];
 
-  const togglePlatform = (platformId: string) => {
+  const togglePlatform = (platformId: DeliveryPlatform) => {
     setSelectedPlatforms(prev => 
       prev.includes(platformId) 
         ? prev.filter(p => p !== platformId)
@@ -92,17 +99,30 @@ export function DeliveryScheduler() {
     );
   };
 
-  const scheduleDelivery = () => {
-    console.log("Scheduling delivery:", {
-      date: selectedDate,
-      time: selectedTime,
-      platforms: selectedPlatforms,
-      contentType,
-      autoGenerate,
-      customPrompt: customPrompt || undefined,
-      recurring: recurringSchedule ? weeklySchedules : undefined
+  const handleScheduleDelivery = () => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    const scheduledDateTime = new Date(selectedDate);
+    const [hours, minutes] = selectedTime.split(':');
+    scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+    selectedPlatforms.forEach(platform => {
+      scheduleDelivery({
+        userId: user.id,
+        platform,
+        contentType,
+        scheduledFor: scheduledDateTime.toISOString(),
+        autoGenerate,
+        customPrompt: customPrompt || undefined,
+        recurringConfig: recurringSchedule ? { 
+          frequency: 'weekly' as const, 
+          weeklySchedules 
+        } : undefined
+      });
     });
-    // Implementation would call delivery scheduling hook
   };
 
   const getDeliveriesForDate = (date: Date) => {
@@ -206,7 +226,7 @@ export function DeliveryScheduler() {
             {/* Content Type */}
             <div className="space-y-2">
               <Label>Content Type</Label>
-              <Select value={contentType} onValueChange={setContentType}>
+              <Select value={contentType} onValueChange={(value: DeliveryContentType) => setContentType(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -258,9 +278,9 @@ export function DeliveryScheduler() {
             </div>
 
             {/* Schedule Delivery Button */}
-            <Button onClick={scheduleDelivery} className="w-full">
+            <Button onClick={handleScheduleDelivery} className="w-full" disabled={isScheduling}>
               <Send className="h-4 w-4 mr-2" />
-              {recurringSchedule ? "Setup Recurring Schedule" : "Schedule Delivery"}
+              {isScheduling ? "Scheduling..." : recurringSchedule ? "Setup Recurring Schedule" : "Schedule Delivery"}
             </Button>
           </CardContent>
         </Card>
@@ -337,9 +357,6 @@ export function DeliveryScheduler() {
                       >
                         {delivery.status.replace("_", " ")}
                       </Badge>
-                      <Button variant="ghost" size="sm">
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}

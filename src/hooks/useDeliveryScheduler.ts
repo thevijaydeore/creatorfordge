@@ -3,10 +3,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
+// Updated types to match the new database schema with ENUM types
+export type DeliveryPlatform = 'twitter' | 'linkedin' | 'instagram' | 'facebook' | 'youtube' | 'tiktok'
+export type DeliveryContentType = 'post' | 'thread' | 'story' | 'reel' | 'video' | 'carousel' | 'article'
+export type DeliveryStatus = 'scheduled' | 'processing' | 'sent' | 'failed' | 'cancelled'
+
 interface ScheduleDeliveryParams {
   userId: string
-  platform: string
-  contentType: string
+  platform: DeliveryPlatform
+  contentType: DeliveryContentType
   scheduledFor: string
   draftId?: string
   autoGenerate?: boolean
@@ -20,10 +25,10 @@ interface ScheduleDeliveryParams {
 interface DeliverySchedule {
   id: string
   user_id: string
-  platform: string
-  content_type: string
+  platform: DeliveryPlatform
+  content_type: DeliveryContentType
   scheduled_for: string
-  status: 'scheduled' | 'processing' | 'sent' | 'failed' | 'cancelled'
+  status: DeliveryStatus
   draft_id?: string
   auto_generate: boolean
   custom_prompt?: string
@@ -50,7 +55,7 @@ export const useDeliveryScheduler = () => {
           auto_generate: params.autoGenerate || false,
           custom_prompt: params.customPrompt,
           recurring_config: params.recurringConfig,
-          status: 'scheduled'
+          status: 'scheduled' as DeliveryStatus
         })
         .select()
         .single()
@@ -73,7 +78,7 @@ export const useDeliveryScheduler = () => {
     mutationFn: async (scheduleId: string) => {
       const { data, error } = await supabase
         .from('delivery_schedules')
-        .update({ status: 'cancelled' })
+        .update({ status: 'cancelled' as DeliveryStatus })
         .eq('id', scheduleId)
         .select()
         .single()

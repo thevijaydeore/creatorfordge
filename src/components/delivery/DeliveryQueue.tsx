@@ -18,14 +18,15 @@ import {
   Trash2
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { type DeliveryPlatform, type DeliveryContentType, type DeliveryStatus } from "@/hooks/useDeliveryScheduler";
 
 interface QueueItem {
   id: string;
   title: string;
-  platform: string;
-  contentType: string;
+  platform: DeliveryPlatform;
+  contentType: DeliveryContentType;
   scheduledFor: Date;
-  status: 'queued' | 'processing' | 'sent' | 'failed' | 'paused' | 'cancelled';
+  status: DeliveryStatus | 'paused';
   progress?: number;
   retryCount?: number;
   errorMessage?: string;
@@ -41,9 +42,9 @@ export function DeliveryQueue() {
       id: "1",
       title: "Weekly Tech Insights",
       platform: "linkedin",
-      contentType: "text_post",
+      contentType: "post",
       scheduledFor: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
-      status: "queued",
+      status: "scheduled",
       estimatedSendTime: new Date(Date.now() + 30 * 60 * 1000)
     },
     {
@@ -59,7 +60,7 @@ export function DeliveryQueue() {
       id: "3",
       title: "Product Launch Announcement",
       platform: "instagram", 
-      contentType: "image_post",
+      contentType: "story",
       scheduledFor: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
       status: "sent"
     },
@@ -77,7 +78,7 @@ export function DeliveryQueue() {
 
   const getStatusIcon = (status: QueueItem['status']) => {
     switch (status) {
-      case 'queued': return <Clock className="h-4 w-4 text-muted-foreground" />;
+      case 'scheduled': return <Clock className="h-4 w-4 text-muted-foreground" />;
       case 'processing': return <Play className="h-4 w-4 text-blue-500" />;
       case 'sent': return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'failed': return <XCircle className="h-4 w-4 text-red-500" />;
@@ -89,7 +90,7 @@ export function DeliveryQueue() {
 
   const getStatusBadge = (status: QueueItem['status']) => {
     const variants = {
-      'queued': 'secondary',
+      'scheduled': 'secondary',
       'processing': 'default',
       'sent': 'default',
       'failed': 'destructive',
@@ -99,14 +100,16 @@ export function DeliveryQueue() {
     return variants[status] as any;
   };
 
-  const getPlatformBadge = (platform: string) => {
+  const getPlatformBadge = (platform: DeliveryPlatform) => {
     const colors = {
       linkedin: "bg-blue-100 text-blue-800",
       twitter: "bg-sky-100 text-sky-800", 
       instagram: "bg-pink-100 text-pink-800",
-      facebook: "bg-indigo-100 text-indigo-800"
+      facebook: "bg-indigo-100 text-indigo-800",
+      youtube: "bg-red-100 text-red-800",
+      tiktok: "bg-black text-white"
     };
-    return colors[platform as keyof typeof colors] || "bg-gray-100 text-gray-800";
+    return colors[platform] || "bg-gray-100 text-gray-800";
   };
 
   const filterItems = (status?: string) => {
@@ -117,7 +120,7 @@ export function DeliveryQueue() {
   const getTabCounts = () => {
     return {
       all: queueItems.length,
-      queued: queueItems.filter(i => i.status === 'queued').length,
+      scheduled: queueItems.filter(i => i.status === 'scheduled').length,
       processing: queueItems.filter(i => i.status === 'processing').length,
       sent: queueItems.filter(i => i.status === 'sent').length,
       failed: queueItems.filter(i => i.status === 'failed').length
@@ -138,13 +141,13 @@ export function DeliveryQueue() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-            <TabsTrigger value="queued">Queued ({counts.queued})</TabsTrigger>
+            <TabsTrigger value="scheduled">Scheduled ({counts.scheduled})</TabsTrigger>
             <TabsTrigger value="processing">Processing ({counts.processing})</TabsTrigger>
             <TabsTrigger value="sent">Sent ({counts.sent})</TabsTrigger>
             <TabsTrigger value="failed">Failed ({counts.failed})</TabsTrigger>
           </TabsList>
 
-          {(['all', 'queued', 'processing', 'sent', 'failed'] as const).map(tabValue => (
+          {(['all', 'scheduled', 'processing', 'sent', 'failed'] as const).map(tabValue => (
             <TabsContent key={tabValue} value={tabValue} className="mt-6">
               <div className="space-y-4">
                 {filterItems(tabValue === 'all' ? undefined : tabValue).map((item) => (
@@ -175,7 +178,7 @@ export function DeliveryQueue() {
                             ({formatDistanceToNow(item.scheduledFor, { addSuffix: true })})
                           </p>
                           
-                          {item.estimatedSendTime && item.status === 'queued' && (
+                          {item.estimatedSendTime && item.status === 'scheduled' && (
                             <p>
                               Est. send time: {format(item.estimatedSendTime, "HH:mm")}
                             </p>
@@ -207,7 +210,7 @@ export function DeliveryQueue() {
                         <Eye className="h-4 w-4" />
                       </Button>
                       
-                      {(item.status === 'queued' || item.status === 'failed') && (
+                      {(item.status === 'scheduled' || item.status === 'failed') && (
                         <Button variant="ghost" size="sm" title="Edit">
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -219,13 +222,13 @@ export function DeliveryQueue() {
                         </Button>
                       )}
                       
-                      {(item.status === 'queued' || item.status === 'paused') && (
+                      {(item.status === 'scheduled' || item.status === 'paused') && (
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          title={item.status === 'queued' ? 'Pause' : 'Resume'}
+                          title={item.status === 'scheduled' ? 'Pause' : 'Resume'}
                         >
-                          {item.status === 'queued' ? 
+                          {item.status === 'scheduled' ? 
                             <Pause className="h-4 w-4" /> : 
                             <Play className="h-4 w-4" />
                           }

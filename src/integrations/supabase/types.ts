@@ -134,6 +134,66 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_schedules: {
+        Row: {
+          auto_generate: boolean
+          content_type: Database["public"]["Enums"]["delivery_content_type_enum"]
+          created_at: string
+          custom_prompt: string | null
+          draft_id: string | null
+          id: string
+          platform: Database["public"]["Enums"]["delivery_platform_enum"]
+          recurring_config: Json | null
+          scheduled_for: string
+          status: Database["public"]["Enums"]["delivery_status_enum"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_generate?: boolean
+          content_type: Database["public"]["Enums"]["delivery_content_type_enum"]
+          created_at?: string
+          custom_prompt?: string | null
+          draft_id?: string | null
+          id?: string
+          platform: Database["public"]["Enums"]["delivery_platform_enum"]
+          recurring_config?: Json | null
+          scheduled_for: string
+          status?: Database["public"]["Enums"]["delivery_status_enum"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_generate?: boolean
+          content_type?: Database["public"]["Enums"]["delivery_content_type_enum"]
+          created_at?: string
+          custom_prompt?: string | null
+          draft_id?: string | null
+          id?: string
+          platform?: Database["public"]["Enums"]["delivery_platform_enum"]
+          recurring_config?: Json | null
+          scheduled_for?: string
+          status?: Database["public"]["Enums"]["delivery_status_enum"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_delivery_schedules_draft_id"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_delivery_schedules_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "creator_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       drafts: {
         Row: {
           content: Json
@@ -540,7 +600,27 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      delivery_content_type_enum:
+        | "post"
+        | "thread"
+        | "story"
+        | "reel"
+        | "video"
+        | "carousel"
+        | "article"
+      delivery_platform_enum:
+        | "twitter"
+        | "linkedin"
+        | "instagram"
+        | "facebook"
+        | "youtube"
+        | "tiktok"
+      delivery_status_enum:
+        | "scheduled"
+        | "processing"
+        | "sent"
+        | "failed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -667,6 +747,31 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      delivery_content_type_enum: [
+        "post",
+        "thread",
+        "story",
+        "reel",
+        "video",
+        "carousel",
+        "article",
+      ],
+      delivery_platform_enum: [
+        "twitter",
+        "linkedin",
+        "instagram",
+        "facebook",
+        "youtube",
+        "tiktok",
+      ],
+      delivery_status_enum: [
+        "scheduled",
+        "processing",
+        "sent",
+        "failed",
+        "cancelled",
+      ],
+    },
   },
 } as const
