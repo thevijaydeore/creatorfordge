@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
+import type { TopicResearch } from '@/types/research'
 
 interface ResearchParams {
   topicId: string
@@ -52,17 +53,34 @@ export const useTopicResearch = () => {
 export const useTopicResearchData = (topicId: string, enabled = false) => {
   return useQuery({
     queryKey: ['topic-research', topicId],
-    queryFn: async () => {
+    queryFn: async (): Promise<TopicResearch | null> => {
       const { data, error } = await supabase
         .from('topic_research')
         .select('*')
         .eq('topic_id', topicId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
-      return data
+      if (!data) return null
+
+      // Transform the Json types to proper objects
+      return {
+        ...data,
+        key_stats: typeof data.key_stats === 'string' 
+          ? JSON.parse(data.key_stats) 
+          : (data.key_stats as Record<string, any>),
+        audience_insights: typeof data.audience_insights === 'string'
+          ? JSON.parse(data.audience_insights)
+          : (data.audience_insights as Record<string, any>),
+        competitor_analysis: typeof data.competitor_analysis === 'string'
+          ? JSON.parse(data.competitor_analysis)
+          : (data.competitor_analysis as Record<string, any>),
+        sources: typeof data.sources === 'string'
+          ? JSON.parse(data.sources)
+          : (data.sources as Array<{ url: string; credibility: string }>)
+      } as TopicResearch
     },
     enabled: !!topicId && enabled
   })
