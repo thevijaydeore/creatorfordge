@@ -80,7 +80,7 @@ export function TopicScheduleButton({ topicId, topicTitle }: TopicScheduleButton
   };
 
   return (
-    <Dialog open={isOpen} onValueChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2">
           <CalendarIcon className="h-4 w-4" />
