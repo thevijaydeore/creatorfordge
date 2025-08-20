@@ -41,14 +41,14 @@ export const useSources = () => {
 
   const validateRSSFeed = async (url: string): Promise<boolean> => {
     try {
-      // Basic URL validation
-      new URL(url);
-      
-      // For now, just validate URL format
-      // In production, you'd want to call an edge function to validate the RSS feed
-      return url.includes('rss') || url.includes('feed') || url.includes('xml');
+      // Call edge function to validate RSS/Atom feed
+      const { data, error } = await supabase.functions.invoke('validate-rss', {
+        body: { url },
+      })
+      if (error) return false
+      return Boolean(data?.valid)
     } catch {
-      return false;
+      return false
     }
   };
 

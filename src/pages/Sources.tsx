@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Twitter, Rss, Hash, Trash2, BarChart } from "lucide-react";
+import { SourceSyncButton } from "@/components/sources/SourceSyncButton";
 import { AddTwitterSource } from "@/components/sources/AddTwitterSource";
 import { AddRSSSource } from "@/components/sources/AddRSSSource";
 import { AddTagsSource } from "@/components/sources/AddTagsSource";
@@ -214,6 +215,11 @@ const Sources = () => {
                           toggleSourceMutation.mutate({ id: source.id, is_active: checked })
                         }
                         disabled={toggleSourceMutation.isPending}
+                      />
+
+                      <SourceSyncButton 
+                        sourceId={source.id}
+                        syncStatus={source.sync_status}
                       />
 
                       <AlertDialog>

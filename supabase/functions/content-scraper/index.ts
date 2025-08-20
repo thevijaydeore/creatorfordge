@@ -89,11 +89,11 @@ serve(async (req) => {
       throw new Error(`Failed to insert content: ${insertError.message}`)
     }
 
-    // Update source status to completed
+    // Update source status to success
     await supabase
       .from('sources')
       .update({ 
-        sync_status: 'completed',
+        sync_status: 'success',
         last_sync_at: new Date().toISOString(),
         metrics: {
           ...source.metrics,
@@ -144,7 +144,7 @@ serve(async (req) => {
       await supabase
         .from('sources')
         .update({ 
-          sync_status: 'failed',
+          sync_status: 'error',
           sync_error: error.message
         })
         .eq('id', source_id)
