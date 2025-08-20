@@ -9,8 +9,13 @@ import { TimePicker } from "@/components/delivery/TimePicker";
 import { WeeklyScheduleGrid } from "@/components/delivery/WeeklyScheduleGrid";
 import { TimeSlotSelector } from "@/components/delivery/TimeSlotSelector";
 import { Clock, Globe, Save } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useDeliveryScheduler, type DeliveryPlatform } from "@/hooks/useDeliveryScheduler";
+import { toast } from "sonner";
 
 export function DeliveryScheduling() {
+  const { user } = useAuth();
+  const { scheduleDelivery, isScheduling } = useDeliveryScheduler();
   const [selectedTimezone, setSelectedTimezone] = useState("UTC");
   const [schedules, setSchedules] = useState<Record<string, string[]>>({
     monday: [],
@@ -21,6 +26,7 @@ export function DeliveryScheduling() {
     saturday: [],
     sunday: []
   });
+  const [selectedPlatforms, setSelectedPlatforms] = useState<DeliveryPlatform[]>(["linkedin"]);
 
   const timezones = [
     "UTC",
@@ -31,6 +37,71 @@ export function DeliveryScheduling() {
     "Asia/Tokyo",
     "Australia/Sydney"
   ];
+
+  const platformOptions: Array<{ id: DeliveryPlatform; label: string }> = [
+    { id: "linkedin", label: "LinkedIn" },
+    { id: "twitter", label: "Twitter" },
+    { id: "instagram", label: "Instagram" },
+    { id: "facebook", label: "Facebook" },
+    { id: "youtube", label: "YouTube" },
+    { id: "tiktok", label: "TikTok" },
+  ];
+
+  const togglePlatform = (id: DeliveryPlatform) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+  };
+
+  const getNextOccurrenceIso = (): string => {
+    const dayOrder = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"] as const;
+    const now = new Date();
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      const dayKey = dayOrder[d.getDay()] as keyof typeof schedules;
+      const times = schedules[dayKey] || [];
+      if (times.length > 0) {
+        const [hh, mm] = times[0].split(":");
+        d.setHours(parseInt(hh), parseInt(mm), 0, 0);
+        if (d > now) return d.toISOString();
+      }
+    }
+    const fallback = new Date(now.getTime() + 60*60*1000);
+    return fallback.toISOString();
+  };
+
+  const handleSave = () => {
+    if (!user) {
+      toast.error("Please log in to save schedule");
+      return;
+    }
+    const hasAnyTime = Object.values(schedules).some(arr => (arr || []).length > 0);
+    if (!hasAnyTime) {
+      toast.error("Add at least one time slot to save");
+      return;
+    }
+
+    const scheduledFor = getNextOccurrenceIso();
+    const recurringConfig = {
+      frequency: "weekly",
+      weeklySchedules: schedules,
+      timezone: selectedTimezone,
+    };
+
+    selectedPlatforms.forEach((platform) => {
+      scheduleDelivery({
+        userId: user.id,
+        platform,
+        contentType: "post",
+        scheduledFor,
+        autoGenerate: true,
+        recurringConfig: recurringConfig as any,
+      });
+    });
+
+    toast.success("Schedule saved");
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -82,6 +153,26 @@ export function DeliveryScheduling() {
               <Label>Custom Time</Label>
               <TimePicker />
             </div>
+
+            <Separator />
+
+            {/* Platforms */}
+            <div className="space-y-3">
+              <Label>Platforms</Label>
+              <div className="flex flex-wrap gap-2">
+                {platformOptions.map(p => (
+                  <Button
+                    key={p.id}
+                    type="button"
+                    size="sm"
+                    variant={selectedPlatforms.includes(p.id) ? "default" : "outline"}
+                    onClick={() => togglePlatform(p.id)}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -132,9 +223,9 @@ export function DeliveryScheduling() {
           />
           
           <div className="mt-6 flex justify-end">
-            <Button className="bg-creator-gradient hover:bg-creator-gradient-secondary">
+            <Button onClick={handleSave} disabled={isScheduling} className="bg-creator-gradient hover:bg-creator-gradient-secondary">
               <Save className="h-4 w-4 mr-2" />
-              Save Schedule
+              {isScheduling ? 'Saving...' : 'Save Schedule'}
             </Button>
           </div>
         </CardContent>
