@@ -5,6 +5,9 @@ import { DraftCard } from "@/components/drafts/DraftCard";
 import { DraftFilters } from "@/components/drafts/DraftFilters";
 import { DraftScheduleButton } from "@/components/drafts/DraftScheduleButton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,6 +30,9 @@ export default function Drafts() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { toast } = useToast();
+  const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editText, setEditText] = useState("");
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,10 +135,28 @@ export default function Drafts() {
   }, [drafts, searchQuery, selectedPlatform, selectedStatus, selectedContentType, dateRange]);
 
   const handleEdit = (draft: Draft) => {
-    toast({
-      title: "Edit Draft",
-      description: "Draft editing functionality coming soon!",
-    });
+    setEditingDraft(draft);
+    setEditTitle(draft.title || "");
+    setEditText(draft.content?.text || "");
+  };
+
+  const saveEdit = async () => {
+    if (!editingDraft) return;
+    try {
+      const updatedContent = { ...(editingDraft.content || {}), text: editText };
+      const { data, error } = await supabase
+        .from('drafts')
+        .update({ title: editTitle, content: updatedContent })
+        .eq('id', editingDraft.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setDrafts(prev => prev.map(d => d.id === editingDraft.id ? data as Draft : d));
+      setEditingDraft(null);
+      toast({ title: 'Saved', description: 'Draft updated.' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to save draft.', variant: 'destructive' });
+    }
   };
 
   const handleSchedule = (draft: Draft) => {
@@ -394,6 +418,31 @@ export default function Drafts() {
           </div>
         )}
       </div>
+      {/* Edit Draft Dialog */}
+      <Dialog open={!!editingDraft} onOpenChange={(open) => !open && setEditingDraft(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Draft</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+            />
+            <Textarea
+              rows={8}
+              placeholder="Content"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingDraft(null)}>Cancel</Button>
+              <Button onClick={saveEdit}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
