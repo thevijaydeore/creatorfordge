@@ -1,166 +1,277 @@
 
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { toast } from "sonner"
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { TopicScheduleButton } from "./TopicScheduleButton";
 import { 
-  Flame, 
-  Bookmark, 
-  Wand2, 
-  BookOpen, 
-  Search,
-  ChevronDown,
-  ChevronUp 
-} from "lucide-react"
-import type { Topic } from "@/hooks/useTopics"
-import { useTopicResearch, useTopicResearchData } from "@/hooks/useTopicResearch"
-import { useAuth } from "@/hooks/useAuth"
-import { TopicResearchCard } from "./TopicResearchCard"
-import { ContentGenerationForm } from "./ContentGenerationForm"
+  TrendingUp, 
+  Users, 
+  Calendar, 
+  Target, 
+  Lightbulb,
+  BarChart3,
+  Hash,
+  ExternalLink,
+  Sparkles
+} from "lucide-react";
 
-interface Props {
-  topic: Topic
+interface Topic {
+  id: string;
+  title: string;
+  description?: string;
+  confidence_score: number;
+  trend_score: number;
+  is_trending: boolean;
+  keywords: string[];
+  topic_type?: string;
+  created_at: string;
 }
 
-export const EnhancedTopicCard = ({ topic }: Props) => {
-  const { user } = useAuth()
-  const { conductResearch, isResearching } = useTopicResearch()
-  const { data: research } = useTopicResearchData(topic.id, true)
-  
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [showContentForm, setShowContentForm] = useState(false)
+interface TopicResearch {
+  summary?: string;
+  content_angles: string[];
+  hashtags: string[];
+  key_stats: {
+    engagement_rate?: number;
+    potential_reach?: number;
+    competition_level?: string;
+    trending_duration?: string;
+  };
+  audience_insights: {
+    primary_audience?: string;
+    interests?: string[];
+    demographics?: any;
+  };
+  credibility_score: number;
+}
 
-  const onComingSoon = (label: string) => () => toast.info(`${label} coming soon`)
+interface EnhancedTopicCardProps {
+  topic: Topic;
+  research?: TopicResearch;
+  onResearch?: (topicId: string) => void;
+  onGenerate?: (topicId: string) => void;
+  isResearching?: boolean;
+  isGenerating?: boolean;
+}
 
-  const handleResearch = (depth: 'quick' | 'detailed' | 'comprehensive' = 'detailed') => {
-    if (!user?.id) {
-      toast.error('Please log in to conduct research')
-      return
+export function EnhancedTopicCard({
+  topic,
+  research,
+  onResearch,
+  onGenerate,
+  isResearching = false,
+  isGenerating = false
+}: EnhancedTopicCardProps) {
+  const [showFullDescription, setShowFullDescription] = useState(false);
+
+  const getTopicTypeColor = (type?: string) => {
+    const colors = {
+      'trending': 'bg-red-100 text-red-800',
+      'educational': 'bg-blue-100 text-blue-800',
+      'entertainment': 'bg-purple-100 text-purple-800',
+      'news': 'bg-green-100 text-green-800',
+      'business': 'bg-orange-100 text-orange-800'
+    };
+    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getCompetitionColor = (level?: string) => {
+    switch (level) {
+      case 'low': return 'text-green-600';
+      case 'medium': return 'text-yellow-600';
+      case 'high': return 'text-red-600';
+      default: return 'text-gray-600';
     }
-
-    conductResearch({
-      topicId: topic.id,
-      userId: user.id,
-      depthLevel: depth
-    })
-  }
-
-  const handleGenerateContent = (researchId?: string) => {
-    setShowContentForm(true)
-  }
+  };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            {topic.is_trending && <Flame className="h-4 w-4 text-destructive" />}
-            {topic.title}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {topic.topic_type && <Badge variant="secondary">{topic.topic_type}</Badge>}
-            <Badge variant="outline">Trend {topic.trend_score}</Badge>
-            <Badge variant="outline">Conf {Math.round(topic.confidence_score * 100)}%</Badge>
-          </div>
+    <Card className="relative overflow-hidden">
+      {topic.is_trending && (
+        <div className="absolute top-0 right-0 bg-gradient-to-l from-red-500 to-pink-500 text-white px-3 py-1 text-xs font-medium rounded-bl-lg">
+          <TrendingUp className="h-3 w-3 inline mr-1" />
+          Trending
         </div>
-        {topic.description && (
-          <p className="text-sm text-muted-foreground leading-relaxed">{topic.description}</p>
-        )}
-      </CardHeader>
+      )}
       
-      <CardContent>
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {topic.keywords?.slice(0, 6).map((kw) => (
-            <Badge key={kw} variant="outline">#{kw}</Badge>
+      <CardHeader className="space-y-4">
+        <div className="space-y-2">
+          <CardTitle className="text-lg leading-tight">{topic.title}</CardTitle>
+          {topic.description && (
+            <CardDescription className={`${!showFullDescription && topic.description.length > 150 ? 'line-clamp-2' : ''}`}>
+              {topic.description}
+              {topic.description.length > 150 && (
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="text-primary hover:underline ml-2 text-sm"
+                >
+                  {showFullDescription ? 'Show less' : 'Show more'}
+                </button>
+              )}
+            </CardDescription>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {topic.topic_type && (
+            <Badge className={getTopicTypeColor(topic.topic_type)}>
+              {topic.topic_type}
+            </Badge>
+          )}
+          <Badge variant="outline">
+            Score: {(topic.confidence_score * 100).toFixed(0)}%
+          </Badge>
+          {topic.keywords.slice(0, 3).map((keyword) => (
+            <Badge key={keyword} variant="secondary" className="text-xs">
+              #{keyword}
+            </Badge>
           ))}
         </div>
-        
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Button size="sm" onClick={() => handleResearch('detailed')} disabled={isResearching}> 
-            <BookOpen className="h-4 w-4 mr-2" /> 
-            {isResearching ? 'Researching...' : 'Research'}
-          </Button>
-          
-          <Button size="sm" variant="secondary" onClick={() => setShowContentForm(true)}> 
-            <Wand2 className="h-4 w-4 mr-2" /> Generate
-          </Button>
-          
-          <Button size="sm" variant="outline" onClick={onComingSoon("Save")}> 
-            <Bookmark className="h-4 w-4 mr-2" /> Save
-          </Button>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
+        {/* Topic Metrics */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Confidence</span>
+            </div>
+            <Progress value={topic.confidence_score * 100} className="h-2" />
+            <span className="text-xs text-muted-foreground mt-1 block">
+              {(topic.confidence_score * 100).toFixed(0)}% match
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Trend Score</span>
+            </div>
+            <Progress value={topic.trend_score} className="h-2" />
+            <span className="text-xs text-muted-foreground mt-1 block">
+              {topic.trend_score}/100
+            </span>
+          </div>
         </div>
 
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between">
-              <span className="flex items-center gap-2">
-                <Search className="h-4 w-4" />
-                Advanced Actions
-              </span>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
+        {/* Research Data */}
+        {research && (
+          <>
+            <Separator />
+            <div className="space-y-4">
+              {research.summary && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4" />
+                    Summary
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{research.summary}</p>
+                </div>
               )}
-            </Button>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent className="space-y-4 mt-4">
-            {/* Research Depth Options */}
-            <div>
-              <p className="text-sm font-medium mb-2">Research Depth:</p>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => handleResearch('quick')}
-                  disabled={isResearching}
-                >
-                  Quick
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => handleResearch('detailed')}
-                  disabled={isResearching}
-                >
-                  Detailed
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => handleResearch('comprehensive')}
-                  disabled={isResearching}
-                >
-                  Comprehensive
-                </Button>
-              </div>
+
+              {/* Key Stats */}
+              {research.key_stats && Object.keys(research.key_stats).length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Key Stats
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {research.key_stats.engagement_rate && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Engagement:</span>
+                        <span className="font-medium">{research.key_stats.engagement_rate}%</span>
+                      </div>
+                    )}
+                    {research.key_stats.potential_reach && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Reach:</span>
+                        <span className="font-medium">{research.key_stats.potential_reach.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {research.key_stats.competition_level && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Competition:</span>
+                        <span className={`font-medium capitalize ${getCompetitionColor(research.key_stats.competition_level)}`}>
+                          {research.key_stats.competition_level}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Content Angles */}
+              {research.content_angles && research.content_angles.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Content Angles
+                  </h4>
+                  <div className="space-y-1">
+                    {research.content_angles.slice(0, 3).map((angle, index) => (
+                      <div key={index} className="text-xs text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary">•</span>
+                        <span>{angle}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hashtags */}
+              {research.hashtags && research.hashtags.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Hash className="h-4 w-4" />
+                    Hashtags
+                  </h4>
+                  <div className="flex flex-wrap gap-1">
+                    {research.hashtags.slice(0, 6).map((hashtag) => (
+                      <Badge key={hashtag} variant="outline" className="text-xs">
+                        #{hashtag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          </>
+        )}
 
-            {/* Show Research Results */}
-            {research && (
-              <TopicResearchCard 
-                research={research} 
-                onGenerateContent={handleGenerateContent}
-              />
-            )}
+        {/* Actions */}
+        <Separator />
+        <div className="flex flex-wrap gap-2">
+          {onResearch && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onResearch(topic.id)}
+              disabled={isResearching}
+            >
+              {isResearching ? "Researching..." : "Research"}
+            </Button>
+          )}
+          
+          {onGenerate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onGenerate(topic.id)}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : "Generate Content"}
+            </Button>
+          )}
 
-            {/* Content Generation Form */}
-            {showContentForm && (
-              <ContentGenerationForm 
-                topicId={topic.id}
-                researchId={research?.id}
-                onSuccess={() => {
-                  setShowContentForm(false)
-                  toast.success('Content generated and saved to drafts!')
-                }}
-              />
-            )}
-          </CollapsibleContent>
-        </Collapsible>
+          <TopicScheduleButton 
+            topicId={topic.id}
+            topicTitle={topic.title}
+          />
+        </div>
       </CardContent>
     </Card>
-  )
+  );
 }

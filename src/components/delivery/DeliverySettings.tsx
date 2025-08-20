@@ -1,251 +1,236 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Bell, RefreshCw, CheckCircle, Save } from "lucide-react";
+import { Clock, Bell, Globe, Zap, Save } from "lucide-react";
+import { useDeliverySettings } from "@/hooks/useDeliverySettings";
+import { useAuth } from "@/hooks/useAuth";
 
 export function DeliverySettings() {
-  const [autoDelivery, setAutoDelivery] = useState(true);
-  const [approvalWorkflow, setApprovalWorkflow] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
-  const [retryAttempts, setRetryAttempts] = useState("3");
-  const [retryInterval, setRetryInterval] = useState("30");
+  const { user } = useAuth();
+  const { settings, isLoading, updateSettings, isUpdating } = useDeliverySettings(user?.id || '');
+  
+  const [deliveryTime, setDeliveryTime] = useState("09:00");
+  const [frequency, setFrequency] = useState("daily");
+  const [timezone, setTimezone] = useState("UTC");
+  const [enabledChannels, setEnabledChannels] = useState<string[]>(["email"]);
+
+  useEffect(() => {
+    if (settings) {
+      setDeliveryTime(settings.delivery_time);
+      setFrequency(settings.frequency);
+      setTimezone(settings.timezone);
+      setEnabledChannels(settings.channels);
+    }
+  }, [settings]);
+
+  const channels = [
+    { id: "email", name: "Email", description: "Receive delivery notifications via email" },
+    { id: "push", name: "Push Notifications", description: "Browser push notifications" },
+    { id: "slack", name: "Slack", description: "Slack workspace notifications" }
+  ];
+
+  const timezones = [
+    { value: "UTC", label: "UTC (Coordinated Universal Time)" },
+    { value: "America/New_York", label: "Eastern Time (EST/EDT)" },
+    { value: "America/Chicago", label: "Central Time (CST/CDT)" },
+    { value: "America/Denver", label: "Mountain Time (MST/MDT)" },
+    { value: "America/Los_Angeles", label: "Pacific Time (PST/PDT)" },
+    { value: "Europe/London", label: "Greenwich Mean Time (GMT)" },
+    { value: "Europe/Paris", label: "Central European Time (CET)" },
+    { value: "Asia/Tokyo", label: "Japan Standard Time (JST)" },
+    { value: "Asia/Shanghai", label: "China Standard Time (CST)" },
+    { value: "Australia/Sydney", label: "Australian Eastern Time (AET)" }
+  ];
+
+  const toggleChannel = (channelId: string) => {
+    setEnabledChannels(prev => 
+      prev.includes(channelId) 
+        ? prev.filter(c => c !== channelId)
+        : [...prev, channelId]
+    );
+  };
+
+  const handleSave = () => {
+    updateSettings({
+      delivery_time: deliveryTime,
+      frequency,
+      timezone,
+      channels: enabledChannels
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Auto-Delivery Settings */}
+      {/* Delivery Schedule */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Delivery Automation
+            <Clock className="h-5 w-5" />
+            Delivery Schedule
           </CardTitle>
           <CardDescription>
-            Configure automatic content delivery settings
+            Configure when your content should be delivered
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="auto-delivery" className="text-base font-medium">
-                Auto-Delivery
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically send content based on your schedule
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label>Default Delivery Time</Label>
+              <Select value={deliveryTime} onValueChange={setDeliveryTime}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const hour = i.toString().padStart(2, '0');
+                    return (
+                      <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
+                        {`${hour}:00`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
-            <Switch
-              id="auto-delivery"
-              checked={autoDelivery}
-              onCheckedChange={setAutoDelivery}
-            />
+
+            <div className="space-y-2">
+              <Label>Frequency</Label>
+              <Select value={frequency} onValueChange={setFrequency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="approval-workflow" className="text-base font-medium">
-                Draft Approval Workflow
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Require manual approval before sending drafts
-              </p>
-            </div>
-            <Switch
-              id="approval-workflow"
-              checked={approvalWorkflow}
-              onCheckedChange={setApprovalWorkflow}
-            />
+          <div className="space-y-2">
+            <Label>Timezone</Label>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {timezones.map((tz) => (
+                  <SelectItem key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          {approvalWorkflow && (
-            <div className="ml-4 p-4 bg-muted/30 rounded-lg border">
-              <p className="text-sm text-muted-foreground">
-                When enabled, all scheduled deliveries will be held for manual approval. 
-                You'll receive notifications when drafts are ready for review.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Notification Preferences */}
+      {/* Notification Channels */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Notification Preferences
+            Notification Channels
           </CardTitle>
           <CardDescription>
             Choose how you want to be notified about delivery events
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="email-notifications" className="text-base font-medium">
-                Email Notifications
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Receive email alerts for delivery confirmations and failures
-              </p>
-            </div>
-            <Switch
-              id="email-notifications"
-              checked={emailNotifications}
-              onCheckedChange={setEmailNotifications}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="push-notifications" className="text-base font-medium">
-                Push Notifications
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Receive browser push notifications for real-time updates
-              </p>
-            </div>
-            <Switch
-              id="push-notifications"
-              checked={pushNotifications}
-              onCheckedChange={setPushNotifications}
-            />
-          </div>
-
-          {(emailNotifications || pushNotifications) && (
-            <div className="space-y-3 ml-4 p-4 bg-muted/30 rounded-lg border">
-              <Label className="text-sm font-medium">Notify me about:</Label>
-              <div className="grid grid-cols-2 gap-2">
+          {channels.map((channel) => (
+            <div key={channel.id} className="flex items-center justify-between">
+              <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-creator-emerald" />
-                  <span className="text-sm">Successful deliveries</span>
+                  <Label className="font-medium">{channel.name}</Label>
+                  {enabledChannels.includes(channel.id) && (
+                    <Badge variant="secondary" className="text-xs">Active</Badge>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-destructive" />
-                  <span className="text-sm">Failed deliveries</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-creator-orange" />
-                  <span className="text-sm">Pending approvals</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-creator-violet" />
-                  <span className="text-sm">Schedule changes</span>
-                </div>
+                <p className="text-sm text-muted-foreground">{channel.description}</p>
               </div>
+              <Switch
+                checked={enabledChannels.includes(channel.id)}
+                onCheckedChange={() => toggleChannel(channel.id)}
+              />
             </div>
-          )}
+          ))}
         </CardContent>
       </Card>
 
-      {/* Retry Logic Configuration */}
+      {/* Automation Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Retry Logic
+            <Zap className="h-5 w-5" />
+            Automation Settings
           </CardTitle>
           <CardDescription>
-            Configure how failed deliveries should be retried
+            Configure automated delivery behaviors
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="retry-attempts">Maximum Retry Attempts</Label>
-              <Select value={retryAttempts} onValueChange={setRetryAttempts}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 attempt</SelectItem>
-                  <SelectItem value="3">3 attempts</SelectItem>
-                  <SelectItem value="5">5 attempts</SelectItem>
-                  <SelectItem value="10">10 attempts</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="font-medium">Auto-retry Failed Deliveries</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically retry failed deliveries up to 3 times
+              </p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="retry-interval">Retry Interval (minutes)</Label>
-              <Select value={retryInterval} onValueChange={setRetryInterval}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 minutes</SelectItem>
-                  <SelectItem value="15">15 minutes</SelectItem>
-                  <SelectItem value="30">30 minutes</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                  <SelectItem value="240">4 hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Switch defaultChecked />
           </div>
 
-          <div className="p-4 bg-muted/30 rounded-lg border">
-            <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">
-                Example
-              </Badge>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Retry Strategy Preview</p>
-                <p className="text-xs text-muted-foreground">
-                  Failed deliveries will be retried up to {retryAttempts} times, 
-                  with a {retryInterval}-minute interval between attempts. 
-                  After all retries are exhausted, you'll be notified of the permanent failure.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <Separator />
 
-      {/* Delivery Limits */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Delivery Limits</CardTitle>
-          <CardDescription>
-            Configure rate limits to comply with provider restrictions
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email-limit">Email Rate Limit (per hour)</Label>
-              <Input 
-                id="email-limit" 
-                type="number" 
-                defaultValue="1000"
-                placeholder="1000"
-              />
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="font-medium">Smart Scheduling</Label>
+              <p className="text-sm text-muted-foreground">
+                Optimize delivery times based on audience engagement data
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp-limit">WhatsApp Rate Limit (per hour)</Label>
-              <Input 
-                id="whatsapp-limit" 
-                type="number" 
-                defaultValue="100"
-                placeholder="100"
-              />
+            <Switch />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="font-medium">Content Optimization</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically optimize content for each platform
+              </p>
             </div>
+            <Switch defaultChecked />
           </div>
         </CardContent>
       </Card>
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button className="bg-creator-gradient hover:bg-creator-gradient-secondary">
+        <Button onClick={handleSave} disabled={isUpdating} className="min-w-[120px]">
           <Save className="h-4 w-4 mr-2" />
-          Save All Settings
+          {isUpdating ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </div>

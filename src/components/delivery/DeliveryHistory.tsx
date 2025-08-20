@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,87 +6,35 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, Download, Eye, Mail, MessageCircle, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Search, Filter, Download, Eye, CheckCircle, XCircle, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { useDeliverySchedules } from "@/hooks/useDeliveryScheduler";
+import { useAuth } from "@/hooks/useAuth";
 
 export function DeliveryHistory() {
+  const { user } = useAuth();
+  const { data: deliveries = [], isLoading } = useDeliverySchedules(user?.id || '');
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [channelFilter, setChannelFilter] = useState("all");
-
-  // Mock data
-  const deliveries = [
-    {
-      id: "del_001",
-      date: "2024-01-15",
-      time: "09:00",
-      channel: "email",
-      status: "delivered",
-      recipients: 1247,
-      opened: 856,
-      clicked: 234,
-      contentPreview: "AI automation in content creation - Today's trending topic...",
-    },
-    {
-      id: "del_002",
-      date: "2024-01-15",
-      time: "14:00",
-      channel: "email",
-      status: "delivered",
-      recipients: 1247,
-      opened: 743,
-      clicked: 189,
-      contentPreview: "Social media engagement strategies - Best practices for...",
-    },
-    {
-      id: "del_003",
-      date: "2024-01-14",
-      time: "18:00",
-      channel: "whatsapp",
-      status: "failed",
-      recipients: 0,
-      opened: 0,
-      clicked: 0,
-      contentPreview: "Creator economy trends - How the landscape is changing...",
-      error: "API authentication failed"
-    },
-    {
-      id: "del_004",
-      date: "2024-01-14",
-      time: "09:00",
-      channel: "email",
-      status: "delivered",
-      recipients: 1245,
-      opened: 892,
-      clicked: 267,
-      contentPreview: "Content creation tools review - Top 10 tools every...",
-    },
-    {
-      id: "del_005",
-      date: "2024-01-13",
-      time: "14:00",
-      channel: "email",
-      status: "pending",
-      recipients: 1250,
-      opened: 0,
-      clicked: 0,
-      contentPreview: "Weekend content planning - Strategies for scheduling...",
-    }
-  ];
+  const [platformFilter, setPlatformFilter] = useState("all");
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "delivered": return <CheckCircle className="h-4 w-4 text-creator-emerald" />;
-      case "failed": return <XCircle className="h-4 w-4 text-destructive" />;
-      case "pending": return <Clock className="h-4 w-4 text-creator-orange" />;
-      default: return null;
+      case "sent": return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "failed": return <XCircle className="h-4 w-4 text-red-500" />;
+      case "scheduled": return <Clock className="h-4 w-4 text-blue-500" />;
+      case "processing": return <Clock className="h-4 w-4 text-yellow-500" />;
+      default: return <Clock className="h-4 w-4" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      delivered: "default",
+      sent: "default",
       failed: "destructive", 
-      pending: "secondary"
+      scheduled: "secondary",
+      processing: "secondary",
+      cancelled: "secondary"
     } as const;
     
     return (
@@ -95,20 +44,44 @@ export function DeliveryHistory() {
     );
   };
 
-  const getChannelIcon = (channel: string) => {
-    switch (channel) {
-      case "email": return <Mail className="h-4 w-4" />;
-      case "whatsapp": return <MessageCircle className="h-4 w-4" />;
-      default: return null;
-    }
+  const getPlatformColor = (platform: string) => {
+    const colors = {
+      linkedin: "bg-blue-100 text-blue-800",
+      twitter: "bg-sky-100 text-sky-800", 
+      instagram: "bg-pink-100 text-pink-800",
+      facebook: "bg-indigo-100 text-indigo-800",
+      youtube: "bg-red-100 text-red-800",
+      tiktok: "bg-black text-white"
+    };
+    return colors[platform as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const filteredDeliveries = deliveries.filter(delivery => {
-    const matchesSearch = delivery.contentPreview.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = delivery.custom_prompt?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         delivery.platform.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || delivery.status === statusFilter;
-    const matchesChannel = channelFilter === "all" || delivery.channel === channelFilter;
-    return matchesSearch && matchesStatus && matchesChannel;
+    const matchesPlatform = platformFilter === "all" || delivery.platform === platformFilter;
+    return matchesSearch && matchesStatus && matchesPlatform;
   });
+
+  const completedDeliveries = deliveries.filter(d => d.status === 'sent' || d.status === 'failed');
+  const successRate = completedDeliveries.length > 0 
+    ? (deliveries.filter(d => d.status === 'sent').length / completedDeliveries.length) * 100 
+    : 0;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -139,19 +112,24 @@ export function DeliveryHistory() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={channelFilter} onValueChange={setChannelFilter}>
+            <Select value={platformFilter} onValueChange={setPlatformFilter}>
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Channel" />
+                <SelectValue placeholder="Platform" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Channels</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="all">All Platforms</SelectItem>
+                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                <SelectItem value="twitter">Twitter</SelectItem>
+                <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="facebook">Facebook</SelectItem>
+                <SelectItem value="youtube">YouTube</SelectItem>
+                <SelectItem value="tiktok">TikTok</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm">
@@ -169,11 +147,10 @@ export function DeliveryHistory() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date & Time</TableHead>
-                <TableHead>Channel</TableHead>
+                <TableHead>Platform</TableHead>
+                <TableHead>Content Type</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Recipients</TableHead>
-                <TableHead>Engagement</TableHead>
-                <TableHead>Content Preview</TableHead>
+                <TableHead>Scheduled For</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -182,60 +159,33 @@ export function DeliveryHistory() {
                 <TableRow key={delivery.id}>
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="font-medium">{delivery.date}</div>
+                      <div className="font-medium">
+                        {format(new Date(delivery.created_at), "MMM dd, yyyy")}
+                      </div>
                       <div className="text-sm text-muted-foreground font-mono">
-                        {delivery.time}
+                        {format(new Date(delivery.created_at), "HH:mm")}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getChannelIcon(delivery.channel)}
-                      <span className="capitalize">{delivery.channel}</span>
-                    </div>
+                    <Badge className={getPlatformColor(delivery.platform)}>
+                      {delivery.platform.charAt(0).toUpperCase() + delivery.platform.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {delivery.content_type.replace('_', ' ')}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {getStatusIcon(delivery.status)}
                       {getStatusBadge(delivery.status)}
                     </div>
-                    {delivery.error && (
-                      <div className="text-xs text-destructive mt-1">
-                        {delivery.error}
-                      </div>
-                    )}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm font-medium">
-                      {delivery.recipients.toLocaleString()}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {delivery.status === "delivered" && (
-                      <div className="space-y-1">
-                        <div className="text-sm">
-                          <span className="text-creator-violet font-medium">
-                            {delivery.opened}
-                          </span>
-                          <span className="text-muted-foreground"> opened</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-creator-emerald font-medium">
-                            {delivery.clicked}
-                          </span>
-                          <span className="text-muted-foreground"> clicked</span>
-                        </div>
-                      </div>
-                    )}
-                    {delivery.status !== "delivered" && (
-                      <span className="text-sm text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px]">
-                      <p className="text-sm truncate" title={delivery.contentPreview}>
-                        {delivery.contentPreview}
-                      </p>
+                    <div className="text-sm">
+                      {format(new Date(delivery.scheduled_for), "MMM dd, HH:mm")}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -247,6 +197,11 @@ export function DeliveryHistory() {
               ))}
             </TableBody>
           </Table>
+          {filteredDeliveries.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No deliveries found</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -254,26 +209,26 @@ export function DeliveryHistory() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-creator-cyan">12</div>
+            <div className="text-2xl font-bold">{deliveries.length}</div>
             <div className="text-sm text-muted-foreground">Total Deliveries</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-creator-emerald">98.5%</div>
+            <div className="text-2xl font-bold">{successRate.toFixed(1)}%</div>
             <div className="text-sm text-muted-foreground">Success Rate</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-creator-violet">3,847</div>
-            <div className="text-sm text-muted-foreground">Total Opens</div>
+            <div className="text-2xl font-bold">{deliveries.filter(d => d.status === 'sent').length}</div>
+            <div className="text-sm text-muted-foreground">Successful</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-creator-orange">924</div>
-            <div className="text-sm text-muted-foreground">Total Clicks</div>
+            <div className="text-2xl font-bold">{deliveries.filter(d => d.status === 'failed').length}</div>
+            <div className="text-sm text-muted-foreground">Failed</div>
           </CardContent>
         </Card>
       </div>

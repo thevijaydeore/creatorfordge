@@ -8,9 +8,13 @@ import { DeliveryChannels } from "@/components/delivery/DeliveryChannels";
 import { DeliveryHistory } from "@/components/delivery/DeliveryHistory";
 import { DeliveryAnalytics } from "@/components/delivery/DeliveryAnalytics";
 import { DeliverySettings } from "@/components/delivery/DeliverySettings";
+import { useRealtimeDeliveries } from "@/hooks/useRealtimeDeliveries";
 import { Clock, Send, History, Settings, BarChart3, Zap } from "lucide-react";
 
 export default function Delivery() {
+  // Enable real-time updates for delivery status changes
+  useRealtimeDeliveries();
+
   return (
     <AppLayout>
       <div className="space-y-6">
