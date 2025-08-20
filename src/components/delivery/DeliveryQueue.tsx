@@ -18,89 +18,38 @@ import {
   Trash2
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { type DeliveryPlatform, type DeliveryContentType, type DeliveryStatus } from "@/hooks/useDeliveryScheduler";
-
-interface QueueItem {
-  id: string;
-  title: string;
-  platform: DeliveryPlatform;
-  contentType: DeliveryContentType;
-  scheduledFor: Date;
-  status: DeliveryStatus | 'paused';
-  progress?: number;
-  retryCount?: number;
-  errorMessage?: string;
-  estimatedSendTime?: Date;
-}
+import { useDeliveryQueue, useDeliveryScheduler } from "@/hooks/useDeliveryScheduler";
+import { useAuth } from "@/hooks/useAuth";
 
 export function DeliveryQueue() {
+  const { user } = useAuth();
+  const { data: queueItems = [], isLoading } = useDeliveryQueue(user?.id || '');
+  const { cancelScheduledDelivery } = useDeliveryScheduler();
   const [activeTab, setActiveTab] = useState("all");
-  
-  // Mock queue data
-  const [queueItems] = useState<QueueItem[]>([
-    {
-      id: "1",
-      title: "Weekly Tech Insights",
-      platform: "linkedin",
-      contentType: "post",
-      scheduledFor: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
-      status: "scheduled",
-      estimatedSendTime: new Date(Date.now() + 30 * 60 * 1000)
-    },
-    {
-      id: "2", 
-      title: "Industry Update Thread",
-      platform: "twitter",
-      contentType: "thread",
-      scheduledFor: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
-      status: "processing",
-      progress: 65
-    },
-    {
-      id: "3",
-      title: "Product Launch Announcement",
-      platform: "instagram", 
-      contentType: "story",
-      scheduledFor: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-      status: "sent"
-    },
-    {
-      id: "4",
-      title: "Market Analysis Post",
-      platform: "linkedin",
-      contentType: "article", 
-      scheduledFor: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-      status: "failed",
-      retryCount: 2,
-      errorMessage: "Rate limit exceeded. Will retry in 10 minutes."
-    }
-  ]);
 
-  const getStatusIcon = (status: QueueItem['status']) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'scheduled': return <Clock className="h-4 w-4 text-muted-foreground" />;
       case 'processing': return <Play className="h-4 w-4 text-blue-500" />;
       case 'sent': return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'failed': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'paused': return <Pause className="h-4 w-4 text-yellow-500" />;
       case 'cancelled': return <AlertCircle className="h-4 w-4 text-gray-500" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };
 
-  const getStatusBadge = (status: QueueItem['status']) => {
+  const getStatusBadge = (status: string) => {
     const variants = {
       'scheduled': 'secondary',
       'processing': 'default',
       'sent': 'default',
       'failed': 'destructive',
-      'paused': 'secondary',
       'cancelled': 'secondary'
     };
-    return variants[status] as any;
+    return variants[status as keyof typeof variants] || 'secondary';
   };
 
-  const getPlatformBadge = (platform: DeliveryPlatform) => {
+  const getPlatformBadge = (platform: string) => {
     const colors = {
       linkedin: "bg-blue-100 text-blue-800",
       twitter: "bg-sky-100 text-sky-800", 
@@ -109,7 +58,7 @@ export function DeliveryQueue() {
       youtube: "bg-red-100 text-red-800",
       tiktok: "bg-black text-white"
     };
-    return colors[platform] || "bg-gray-100 text-gray-800";
+    return colors[platform as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const filterItems = (status?: string) => {
@@ -128,6 +77,22 @@ export function DeliveryQueue() {
   };
 
   const counts = getTabCounts();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Delivery Queue</CardTitle>
+          <CardDescription>Loading your delivery queue...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -162,46 +127,24 @@ export function DeliveryQueue() {
                       
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-medium">{item.title}</h4>
+                          <h4 className="font-medium">
+                            {item.drafts?.title || `${item.content_type} for ${item.platform}`}
+                          </h4>
                           <Badge className={getPlatformBadge(item.platform)}>
                             {item.platform}
                           </Badge>
-                          <Badge variant="outline">{item.contentType}</Badge>
-                          <Badge variant={getStatusBadge(item.status)}>
+                          <Badge variant="outline">{item.content_type}</Badge>
+                          <Badge variant={getStatusBadge(item.status) as any}>
                             {item.status}
                           </Badge>
                         </div>
 
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p>
-                            Scheduled: {format(item.scheduledFor, "MMM dd, HH:mm")} 
-                            ({formatDistanceToNow(item.scheduledFor, { addSuffix: true })})
+                            Scheduled: {format(new Date(item.scheduled_for), "MMM dd, HH:mm")} 
+                            ({formatDistanceToNow(new Date(item.scheduled_for), { addSuffix: true })})
                           </p>
-                          
-                          {item.estimatedSendTime && item.status === 'scheduled' && (
-                            <p>
-                              Est. send time: {format(item.estimatedSendTime, "HH:mm")}
-                            </p>
-                          )}
-                          
-                          {item.retryCount && item.retryCount > 0 && (
-                            <p>Retry attempts: {item.retryCount}</p>
-                          )}
-                          
-                          {item.errorMessage && (
-                            <p className="text-red-600">{item.errorMessage}</p>
-                          )}
                         </div>
-
-                        {item.status === 'processing' && item.progress && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                              <span>Processing...</span>
-                              <span>{item.progress}%</span>
-                            </div>
-                            <Progress value={item.progress} className="h-2" />
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -222,22 +165,17 @@ export function DeliveryQueue() {
                         </Button>
                       )}
                       
-                      {(item.status === 'scheduled' || item.status === 'paused') && (
+                      {item.status === 'scheduled' && (
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          title={item.status === 'scheduled' ? 'Pause' : 'Resume'}
+                          title="Cancel"
+                          className="text-destructive"
+                          onClick={() => cancelScheduledDelivery(item.id)}
                         >
-                          {item.status === 'scheduled' ? 
-                            <Pause className="h-4 w-4" /> : 
-                            <Play className="h-4 w-4" />
-                          }
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
-                      
-                      <Button variant="ghost" size="sm" title="Cancel" className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}

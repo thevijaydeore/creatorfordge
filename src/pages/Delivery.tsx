@@ -1,11 +1,14 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DeliveryScheduling } from "@/components/delivery/DeliveryScheduling";
+import { DeliveryScheduler } from "@/components/delivery/DeliveryScheduler";
+import { DeliveryQueue } from "@/components/delivery/DeliveryQueue";
 import { DeliveryChannels } from "@/components/delivery/DeliveryChannels";
 import { DeliveryHistory } from "@/components/delivery/DeliveryHistory";
+import { DeliveryAnalytics } from "@/components/delivery/DeliveryAnalytics";
 import { DeliverySettings } from "@/components/delivery/DeliverySettings";
-import { Clock, Send, History, Settings } from "lucide-react";
+import { Clock, Send, History, Settings, BarChart3, Zap } from "lucide-react";
 
 export default function Delivery() {
   return (
@@ -15,16 +18,24 @@ export default function Delivery() {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Delivery Management</h1>
           <p className="text-muted-foreground">
-            Schedule and manage your content delivery across multiple channels
+            Schedule, manage, and track your content delivery across multiple platforms
           </p>
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="scheduling" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="scheduling" className="flex items-center gap-2">
+        <Tabs defaultValue="scheduler" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="scheduler" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Scheduling
+              Scheduler
+            </TabsTrigger>
+            <TabsTrigger value="queue" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Queue
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="channels" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
@@ -40,8 +51,16 @@ export default function Delivery() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="scheduling" className="space-y-6">
-            <DeliveryScheduling />
+          <TabsContent value="scheduler" className="space-y-6">
+            <DeliveryScheduler />
+          </TabsContent>
+
+          <TabsContent value="queue" className="space-y-6">
+            <DeliveryQueue />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <DeliveryAnalytics />
           </TabsContent>
 
           <TabsContent value="channels" className="space-y-6">
