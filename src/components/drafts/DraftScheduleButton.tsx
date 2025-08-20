@@ -48,6 +48,30 @@ export function DraftScheduleButton({ draftId, draftTitle, platform, contentType
     );
   };
 
+  // Map draft content_type (e.g., "text_post") to delivery enum (e.g., "post")
+  const mapToDeliveryContentType = (draftType: string): DeliveryContentType => {
+    switch (draftType) {
+      case 'text_post':
+      case 'caption':
+      case 'long_form':
+        return 'post';
+      case 'thread':
+        return 'thread';
+      case 'article':
+        return 'article';
+      case 'story':
+        return 'story';
+      case 'reel':
+        return 'reel';
+      case 'carousel':
+        return 'carousel';
+      case 'video':
+        return 'video';
+      default:
+        return 'post';
+    }
+  };
+
   const handleSchedule = () => {
     if (!user) return;
 
@@ -55,11 +79,13 @@ export function DraftScheduleButton({ draftId, draftTitle, platform, contentType
     const [hours, minutes] = selectedTime.split(':');
     scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+    const deliveryType = mapToDeliveryContentType(contentType);
+
     selectedPlatforms.forEach(platformId => {
       scheduleDelivery({
         userId: user.id,
         platform: platformId,
-        contentType: contentType as DeliveryContentType,
+        contentType: deliveryType,
         scheduledFor: scheduledDateTime.toISOString(),
         draftId,
         autoGenerate,
@@ -78,7 +104,7 @@ export function DraftScheduleButton({ draftId, draftTitle, platform, contentType
           Schedule
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Schedule "{draftTitle}" for Delivery</DialogTitle>
         </DialogHeader>

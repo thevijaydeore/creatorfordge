@@ -108,10 +108,7 @@ export function DraftCard({ draft, onEdit, onSchedule, onDelete, onDuplicate }: 
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onSchedule(draft)}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Schedule
-                </DropdownMenuItem>
+                
                 <DropdownMenuItem onClick={() => onDuplicate(draft)}>
                   <Copy className="h-4 w-4 mr-2" />
                   Duplicate
@@ -192,10 +189,7 @@ export function DraftCard({ draft, onEdit, onSchedule, onDelete, onDuplicate }: 
                 <Edit className="h-3 w-3 mr-1" />
                 Edit
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onSchedule(draft)}>
-                <Calendar className="h-3 w-3 mr-1" />
-                Schedule
-              </Button>
+              
             </div>
             <Button 
               size="sm" 
