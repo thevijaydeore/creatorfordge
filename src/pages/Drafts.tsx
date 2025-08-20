@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { DraftCard } from "@/components/drafts/DraftCard";
 import { DraftFilters } from "@/components/drafts/DraftFilters";
+import { DraftScheduleButton } from "@/components/drafts/DraftScheduleButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -135,10 +136,7 @@ export default function Drafts() {
   };
 
   const handleSchedule = (draft: Draft) => {
-    toast({
-      title: "Schedule Draft",
-      description: "Draft scheduling functionality coming soon!",
-    });
+    console.log("Legacy schedule handler called for draft:", draft.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -335,7 +333,6 @@ export default function Drafts() {
       {/* Content */}
       <div className="space-y-4">
         {loading ? (
-          // Loading skeleton
           <div className={`grid gap-4 ${
             viewMode === 'grid' 
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
@@ -353,7 +350,6 @@ export default function Drafts() {
             ))}
           </div>
         ) : filteredDrafts.length === 0 ? (
-          // Empty state
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
               <Plus className="h-8 w-8 text-muted-foreground" />
@@ -371,21 +367,29 @@ export default function Drafts() {
             </Button>
           </div>
         ) : (
-          // Drafts grid/list
           <div className={`grid gap-4 ${
             viewMode === 'grid' 
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
               : 'grid-cols-1 max-w-4xl'
           }`}>
             {filteredDrafts.map((draft) => (
-              <DraftCard
-                key={draft.id}
-                draft={draft}
-                onEdit={handleEdit}
-                onSchedule={handleSchedule}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
-              />
+              <div key={draft.id} className="space-y-2">
+                <DraftCard
+                  draft={draft}
+                  onEdit={handleEdit}
+                  onSchedule={handleSchedule}
+                  onDelete={handleDelete}
+                  onDuplicate={handleDuplicate}
+                />
+                <div className="flex justify-end">
+                  <DraftScheduleButton
+                    draftId={draft.id}
+                    draftTitle={draft.title || "Untitled Draft"}
+                    platform={draft.platform}
+                    contentType={draft.content_type}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         )}
