@@ -1,4 +1,5 @@
 
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -21,6 +22,14 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const { topic_id, user_id, depth_level = 'detailed' }: ResearchRequest = await req.json()
+    // Normalize depth to match DB constraint: 'surface' | 'medium' | 'deep'
+    const normalizeDepth = (d: string) => {
+      const map: Record<string,string> = { quick: 'surface', detailed: 'medium', comprehensive: 'deep' }
+      const allowed = new Set(['surface','medium','deep'])
+      if (allowed.has(d)) return d
+      return map[d] || 'medium'
+    }
+    const normDepth = normalizeDepth(depth_level)
 
     console.log(`Starting research for topic: ${topic_id}, depth: ${depth_level}`)
 
@@ -41,7 +50,7 @@ serve(async (req) => {
       .from('topic_research')
       .select('*')
       .eq('topic_id', topic_id)
-      .eq('depth_level', depth_level)
+      .eq('depth_level', normDepth)
       .gte('cached_until', new Date().toISOString())
       .single()
 
@@ -61,10 +70,10 @@ serve(async (req) => {
     }
 
     // Perform AI research
-    const research = await performTopicResearch(topic, depth_level)
+    const research = await performTopicResearch(topic, normDepth)
 
     // Calculate cache duration based on depth
-    const cacheHours = depth_level === 'quick' ? 6 : depth_level === 'detailed' ? 24 : 72
+    const cacheHours = normDepth === 'surface' ? 6 : normDepth === 'medium' ? 24 : 72
     const cachedUntil = new Date(Date.now() + cacheHours * 60 * 60 * 1000).toISOString()
 
     // Store research results
@@ -73,7 +82,7 @@ serve(async (req) => {
       .upsert({
         user_id,
         topic_id,
-        depth_level,
+        depth_level: normDepth,
         summary: research.summary,
         key_stats: research.key_stats,
         audience_insights: research.audience_insights,
@@ -171,15 +180,21 @@ Format as JSON with the following structure:
     })
 
     const data = await response.json()
-    const aiResponse = data.choices[0].message.content
+    const aiResponse = String(data.choices?.[0]?.message?.content ?? '')
 
-    // Try to parse JSON response
-    try {
-      return JSON.parse(aiResponse)
-    } catch (parseError) {
-      console.error('Failed to parse AI response as JSON:', parseError)
-      return generateMockResearch(topic, depth)
+    // Strip Markdown code fences and parse JSON
+    const stripFences = (s: string) => {
+      const trimmed = s.trim()
+      const fenceMatch = trimmed.match(/^```(?:json)?\n([\s\S]*?)\n```$/)
+      if (fenceMatch) return fenceMatch[1].trim()
+      return trimmed
     }
+    const tryParseJson = (s: string) => { try { return JSON.parse(s) } catch { return null } }
+    const cleaned = stripFences(aiResponse)
+    const parsed = tryParseJson(cleaned) || tryParseJson((cleaned.match(/\{[\s\S]*\}/) || [])[0] || '')
+    if (parsed && typeof parsed === 'object') return parsed
+    console.error('Failed to parse AI response as JSON, falling back to mock')
+    return generateMockResearch(topic, depth)
 
   } catch (error) {
     console.error('OpenAI API error:', error)

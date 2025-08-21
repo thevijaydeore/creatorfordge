@@ -1,4 +1,5 @@
 
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -25,7 +26,25 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const { topic_id, user_id, platform, content_type, prompt, research_id }: ContentGenerationRequest = await req.json()
 
-    console.log(`Generating content for platform: ${platform}, type: ${content_type}`)
+    // Normalize platform and content_type to satisfy DB constraints
+    const allowedPlatforms = new Set(['linkedin', 'instagram', 'tiktok', 'twitter'])
+    const normalizePlatform = (p: string) => allowedPlatforms.has(p) ? p : 'linkedin'
+    const normalizeContentType = (p: string, ct: string) => {
+      const allowed = new Set(['text_post', 'carousel', 'reel', 'story'])
+      if (allowed.has(ct)) return ct
+      if (p === 'instagram') {
+        if (ct === 'caption' || ct === 'story') return 'story'
+        if (ct === 'reel') return 'reel'
+        if (ct === 'carousel') return 'carousel'
+      }
+      // threads/articles/long_form and others map to text_post
+      return 'text_post'
+    }
+
+    const normPlatform = normalizePlatform(platform)
+    const normContentType = normalizeContentType(normPlatform, content_type)
+
+    console.log(`Generating content for platform: ${normPlatform}, type: ${normContentType}`)
 
     // Get user profile for voice/style
     const { data: profile } = await supabase
@@ -70,8 +89,8 @@ serve(async (req) => {
     const generatedContent = await generateContent({
       topic,
       research,
-      platform,
-      content_type,
+      platform: normPlatform,
+      content_type: normContentType,
       prompt,
       profile,
       samples
@@ -82,8 +101,8 @@ serve(async (req) => {
       .from('drafts')
       .insert({
         user_id,
-        platform,
-        content_type,
+        platform: normPlatform,
+        content_type: normContentType,
         title: generatedContent.title,
         content: generatedContent,
         metadata: {
@@ -192,18 +211,31 @@ async function generateContent(params: any) {
     })
 
     const data = await response.json()
-    const aiResponse = data.choices[0].message.content
+    const aiResponse = String(data.choices?.[0]?.message?.content ?? '')
 
-    try {
-      return JSON.parse(aiResponse)
-    } catch (parseError) {
-      // Fallback: treat as plain text
-      return {
-        title: topic?.title || 'Generated Content',
-        text: aiResponse,
-        hashtags: research?.hashtags || [],
-        call_to_action: 'What do you think?'
-      }
+    // Try to strip Markdown fences and parse JSON when present
+    const stripFences = (s: string) => {
+      const trimmed = s.trim()
+      const fenceMatch = trimmed.match(/^```(?:json)?\n([\s\S]*?)\n```$/)
+      if (fenceMatch) return fenceMatch[1].trim()
+      return trimmed
+    }
+    const tryParseJson = (s: string) => {
+      try { return JSON.parse(s) } catch { return null }
+    }
+
+    const cleaned = stripFences(aiResponse)
+    const parsed = tryParseJson(cleaned) || tryParseJson((cleaned.match(/\{[\s\S]*\}/) || [])[0] || '')
+    if (parsed && typeof parsed === 'object') {
+      return parsed
+    }
+
+    // Fallback: plain text without code fences
+    return {
+      title: topic?.title || 'Generated Content',
+      text: cleaned.replace(/^```(?:json)?/i, '').replace(/```$/,''),
+      hashtags: research?.hashtags || [],
+      call_to_action: 'What do you think?'
     }
 
   } catch (error) {

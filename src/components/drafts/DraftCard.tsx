@@ -76,7 +76,9 @@ export function DraftCard({ draft, onEdit, onSchedule, onDelete, onDuplicate }: 
     return text.substring(0, maxLength) + '...';
   };
 
-  const contentText = draft.content.text || '';
+  const contentText = typeof (draft.content as any)?.text === 'string'
+    ? (draft.content as any).text
+    : (typeof (draft.content as any) === 'string' ? String(draft.content) : '');
   const displayText = isExpanded ? contentText : truncateText(contentText);
 
   return (
@@ -151,20 +153,28 @@ export function DraftCard({ draft, onEdit, onSchedule, onDelete, onDuplicate }: 
           )}
 
           {/* Hashtags */}
-          {draft.content.hashtags && draft.content.hashtags.length > 0 && (
+          {(() => {
+            const raw = (draft.content as any)?.hashtags;
+            let hashtags: string[] = [];
+            if (Array.isArray(raw)) hashtags = raw as string[];
+            else if (typeof raw === 'string') {
+              hashtags = raw.split(/[,#\s]+/).map(t => t.trim()).filter(Boolean);
+            }
+            return hashtags.length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {draft.content.hashtags.slice(0, 3).map((tag, index) => (
+              {hashtags.slice(0, 3).map((tag, index) => (
                 <span key={index} className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
                   #{tag}
                 </span>
               ))}
-              {draft.content.hashtags.length > 3 && (
+              {hashtags.length > 3 && (
                 <span className="text-xs text-muted-foreground">
-                  +{draft.content.hashtags.length - 3} more
+                  +{hashtags.length - 3} more
                 </span>
               )}
             </div>
-          )}
+            ) : null;
+          })()}
 
           {/* Performance prediction for LinkedIn */}
           {draft.platform === 'linkedin' && draft.metadata.predicted_performance && (

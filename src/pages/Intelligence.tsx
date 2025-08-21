@@ -11,9 +11,15 @@ import { cn } from "@/lib/utils";
 import { useTopics } from "@/hooks/useTopics";
 import { EnhancedTopicCard } from "@/components/intelligence/EnhancedTopicCard";
 import { IngestedContentList } from "@/components/content/IngestedContentList";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ContentGenerationForm } from "@/components/intelligence/ContentGenerationForm";
+import { useTopicResearch, useTopicResearchData } from "@/hooks/useTopicResearch";
+import { useAuth } from "@/hooks/useAuth";
 
 const Intelligence = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [genOpen, setGenOpen] = useState(false);
+  const [genTopicId, setGenTopicId] = useState<string | undefined>(undefined);
   const [showTrendingOnly, setShowTrendingOnly] = useState(false);
   
   const { data: topics = [], isLoading, error } = useTopics(selectedDate);
@@ -168,7 +174,11 @@ const Intelligence = () => {
           ) : (
             <div className="space-y-6">
               {filteredTopics.map((topic) => (
-                <EnhancedTopicCard key={topic.id} topic={topic} />
+                <TopicRow
+                  key={topic.id}
+                  topic={topic}
+                  onGenerate={(tid: string) => { setGenTopicId(tid); setGenOpen(true); }}
+                />
               ))}
             </div>
           )}
@@ -185,8 +195,42 @@ const Intelligence = () => {
           <IngestedContentList />
         </CardContent>
       </Card>
+
+      {/* Generate Content Dialog */}
+      <Dialog open={genOpen} onOpenChange={setGenOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Generate Content</DialogTitle>
+          </DialogHeader>
+          <ContentGenerationForm 
+            topicId={genTopicId}
+            onSuccess={() => setGenOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+function TopicRow({ topic, onGenerate }: { topic: any; onGenerate: (id: string) => void }) {
+  const { user } = useAuth();
+  const { conductResearch, isResearching } = useTopicResearch();
+  const { data: research } = useTopicResearchData(topic.id, true);
+
+  const handleResearch = (topicId: string) => {
+    if (!user?.id) return;
+    conductResearch({ topicId, userId: user.id, depthLevel: 'detailed' });
+  };
+
+  return (
+    <EnhancedTopicCard
+      topic={topic}
+      research={research || undefined}
+      onResearch={handleResearch}
+      isResearching={isResearching}
+      onGenerate={onGenerate}
+    />
+  );
+}
 
 export default Intelligence;

@@ -30,22 +30,21 @@ export const ContentGenerationForm = ({ topicId, researchId, onSuccess }: Conten
     { value: "facebook", label: "Facebook" }
   ]
 
+  // Allowed values must match DB constraint ('text_post','carousel','reel','story')
   const contentTypes = {
     twitter: [
-      { value: "text_post", label: "Text Post" },
-      { value: "thread", label: "Thread" }
+      { value: "text_post", label: "Text Post" }
     ],
     linkedin: [
-      { value: "text_post", label: "Text Post" },
-      { value: "article", label: "Article" }
+      { value: "text_post", label: "Text Post" }
     ],
     instagram: [
-      { value: "caption", label: "Caption" },
-      { value: "story", label: "Story" }
+      { value: "story", label: "Story" },
+      { value: "reel", label: "Reel" },
+      { value: "carousel", label: "Carousel" }
     ],
     facebook: [
-      { value: "text_post", label: "Text Post" },
-      { value: "long_form", label: "Long Form" }
+      { value: "text_post", label: "Text Post" }
     ]
   }
 
