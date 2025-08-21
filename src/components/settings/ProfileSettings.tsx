@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,49 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Camera, User, Mail, Linkedin, Crown, Upload, Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export function ProfileSettings() {
-  const [fullName, setFullName] = useState("Alex Creator");
-  const [email, setEmail] = useState("alex@example.com");
+  const { user } = useAuth();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [linkedinConnected, setLinkedinConnected] = useState(false);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user?.id) return;
+      const { data, error } = await supabase
+        .from('creator_profiles')
+        .select('full_name, email')
+        .eq('user_id', user.id)
+        .single();
+      if (!error && data) {
+        setFullName(data.full_name || "");
+        setEmail(data.email || "");
+      }
+    };
+    loadProfile();
+  }, [user?.id]);
+
+  const saveProfile = async () => {
+    if (!user?.id) return;
+    try {
+      setIsSaving(true);
+      const { error } = await supabase
+        .from('creator_profiles')
+        .update({ full_name: fullName || null, email: email || null })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      toast.success('Profile updated');
+    } catch (e: any) {
+      toast.error(`Failed to update profile: ${e.message || 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -79,9 +117,9 @@ export function ProfileSettings() {
             </div>
           </div>
 
-          <Button className="bg-creator-gradient hover:bg-creator-gradient-secondary">
+          <Button onClick={saveProfile} disabled={isSaving} className="bg-creator-gradient hover:bg-creator-gradient-secondary">
             <Save className="h-4 w-4 mr-2" />
-            Save Changes
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </CardContent>
       </Card>

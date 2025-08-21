@@ -1,201 +1,180 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
+// Basic permissive CORS for scheduler/webhook calls
+const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Brevo (Sendinblue) secrets
+const brevoApiKey = Deno.env.get('BREVO_API_KEY');
+const brevoFromEmail = Deno.env.get('BREVO_FROM_EMAIL');
+const brevoFromName = Deno.env.get('BREVO_FROM_NAME') || 'CreatorPulse';
 
 interface DeliverySchedule {
-  id: string
-  user_id: string
-  platform: string
-  content_type: string
-  scheduled_for: string
-  status: string
-  draft_id?: string
-  auto_generate: boolean
-  custom_prompt?: string
-  recurring_config?: any
+  id: string;
+  user_id: string;
+  platform: string;
+  content_type: string;
+  scheduled_for: string;
+  status: 'scheduled' | 'processing' | 'sent' | 'failed' | 'cancelled';
+  draft_id?: string | null;
+  auto_generate?: boolean;
+  custom_prompt?: string | null;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Processing scheduled deliveries...')
-
-    // Get all scheduled deliveries that are due
-    const now = new Date().toISOString()
-    const { data: scheduledDeliveries, error: fetchError } = await supabaseClient
-      .from('delivery_schedules')
-      .select('*')
-      .eq('status', 'scheduled')
-      .lte('scheduled_for', now)
-
-    if (fetchError) {
-      console.error('Error fetching scheduled deliveries:', fetchError)
-      throw fetchError
+    if (req.method === 'GET') {
+      return new Response(JSON.stringify({ ok: true, message: 'process-delivery is running' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log(`Found ${scheduledDeliveries?.length || 0} deliveries to process`)
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
+    }
 
-    const results = []
+    // Optional overrides for testing: { scheduleId?: string, minutesAhead?: number }
+    let scheduleId: string | undefined;
+    let minutesAhead = 0;
+    try {
+      const body = await req.json();
+      scheduleId = body?.scheduleId;
+      minutesAhead = Number(body?.minutesAhead) || 0;
+    } catch { /* no body */ }
 
-    for (const delivery of scheduledDeliveries || []) {
-      console.log(`Processing delivery ${delivery.id} for platform ${delivery.platform}`)
-      
+    const now = new Date();
+    const horizon = new Date(now.getTime() + minutesAhead * 60 * 1000).toISOString();
+
+    let dueQuery = supabase
+      .from('delivery_schedules')
+      .select(`id,user_id,platform,content_type,scheduled_for,status,draft_id,auto_generate,custom_prompt`)
+      .eq('status', 'scheduled')
+      .limit(25);
+
+    if (scheduleId) {
+      dueQuery = dueQuery.eq('id', scheduleId);
+    } else {
+      dueQuery = dueQuery.lte('scheduled_for', horizon || now.toISOString());
+    }
+
+    const { data: due, error: dueError } = await dueQuery;
+
+    if (dueError) throw new Error(`Failed to query due deliveries: ${dueError.message}`);
+
+    const results: Array<{ id: string; status: string; error?: string }> = [];
+
+    for (const item of (due || []) as DeliverySchedule[]) {
       try {
-        // Update status to processing
-        await supabaseClient
+        // Mark processing
+        await supabase
           .from('delivery_schedules')
           .update({ status: 'processing' })
-          .eq('id', delivery.id)
+          .eq('id', item.id);
 
-        // Process the delivery based on platform and content
-        const result = await processDelivery(delivery, supabaseClient)
-        
-        // Update final status
-        await supabaseClient
+        // Fetch user profile for recipient email
+        const { data: profile, error: profileError } = await supabase
+          .from('creator_profiles')
+          .select('email, full_name')
+          .eq('user_id', item.user_id)
+          .single();
+        if (profileError || !profile?.email) {
+          throw new Error('Recipient email not found for user');
+        }
+
+        // Fetch draft content
+        if (!item.draft_id) {
+          throw new Error('No draft associated with schedule (auto-generate not implemented)');
+        }
+        const { data: draft, error: draftError } = await supabase
+          .from('drafts')
+          .select('title, content')
+          .eq('id', item.draft_id)
+          .single();
+        if (draftError || !draft) {
+          throw new Error('Draft not found');
+        }
+
+        if (!brevoApiKey || !brevoFromEmail) {
+          throw new Error('Missing BREVO_API_KEY or BREVO_FROM_EMAIL');
+        }
+
+        const subject = `[CreatorPulse] Scheduled ${item.platform} ${item.content_type}`;
+        const contentText = draft?.content?.text ?? JSON.stringify(draft?.content ?? {});
+        const html = `
+          <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+            <h2 style="margin:0 0 12px">Your scheduled draft is ready</h2>
+            <p style="color:#555;margin:0 0 16px">Platform: <b>${item.platform}</b> · Type: <b>${item.content_type}</b></p>
+            <h3 style="margin:16px 0 8px">${draft.title ?? 'Untitled Draft'}</h3>
+            <pre style="white-space:pre-wrap;background:#f6f6f6;padding:12px;border-radius:6px">${escapeHtml(contentText)}</pre>
+            <p style="color:#777;margin-top:16px">Sent automatically by CreatorPulse.</p>
+          </div>`;
+
+        // Send via Brevo (Sendinblue)
+        const brevoResp = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { email: brevoFromEmail, name: brevoFromName },
+            to: [{ email: profile.email, name: profile.full_name || profile.email }],
+            subject,
+            textContent: `${draft.title ?? 'Draft'}\n\n${contentText}`,
+            htmlContent: html,
+          }),
+        });
+
+        if (!brevoResp.ok) {
+          const errText = await brevoResp.text();
+          throw new Error(`Brevo error (${brevoResp.status}): ${errText}`);
+        }
+
+        // Mark sent
+        await supabase
           .from('delivery_schedules')
-          .update({ 
-            status: result.success ? 'sent' : 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', delivery.id)
+          .update({ status: 'sent' })
+          .eq('id', item.id);
 
-        results.push({
-          delivery_id: delivery.id,
-          success: result.success,
-          message: result.message
-        })
-
-        console.log(`Delivery ${delivery.id} ${result.success ? 'completed' : 'failed'}: ${result.message}`)
-
-      } catch (deliveryError) {
-        console.error(`Error processing delivery ${delivery.id}:`, deliveryError)
-        
-        // Mark as failed
-        await supabaseClient
+        results.push({ id: item.id, status: 'sent' });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        results.push({ id: (item as any).id, status: 'failed', error: message });
+        await createClient(supabaseUrl, supabaseServiceKey)
           .from('delivery_schedules')
-          .update({ 
-            status: 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', delivery.id)
-
-        results.push({
-          delivery_id: delivery.id,
-          success: false,
-          message: deliveryError.message
-        })
+          .update({ status: 'failed' })
+          .eq('id', (item as any).id);
       }
     }
 
-    return new Response(JSON.stringify({ 
-      processed: results.length,
-      results 
-    }), {
+    return new Response(JSON.stringify({ processed: results.length, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-
+    });
   } catch (error) {
-    console.error('Error in process-delivery function:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = (error as Error).message || 'Unknown error';
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
   }
-})
+});
 
-async function processDelivery(delivery: DeliverySchedule, supabaseClient: any) {
-  // For now, this is a placeholder that simulates delivery processing
-  // In a real implementation, this would:
-  // 1. Get the content from draft_id or generate new content
-  // 2. Format content for the specific platform
-  // 3. Use platform APIs to actually post the content
-  // 4. Handle platform-specific authentication and rate limiting
-
-  console.log(`Processing delivery for ${delivery.platform}`)
-
-  // Simulate platform-specific processing
-  switch (delivery.platform) {
-    case 'linkedin':
-      return await processLinkedInDelivery(delivery, supabaseClient)
-    case 'twitter':
-      return await processTwitterDelivery(delivery, supabaseClient)
-    case 'instagram':
-      return await processInstagramDelivery(delivery, supabaseClient)
-    case 'facebook':
-      return await processFacebookDelivery(delivery, supabaseClient)
-    default:
-      return {
-        success: false,
-        message: `Unsupported platform: ${delivery.platform}`
-      }
-  }
-}
-
-async function processLinkedInDelivery(delivery: DeliverySchedule, supabaseClient: any) {
-  // Simulate LinkedIn posting
-  console.log('Processing LinkedIn delivery...')
-  
-  // In a real implementation, this would:
-  // 1. Get LinkedIn access token for the user
-  // 2. Format content according to LinkedIn's requirements
-  // 3. Make API call to LinkedIn to create post
-  // 4. Handle rate limiting and errors
-  
-  // For now, simulate success
-  await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call delay
-  
-  return {
-    success: true,
-    message: 'Content posted to LinkedIn successfully'
-  }
-}
-
-async function processTwitterDelivery(delivery: DeliverySchedule, supabaseClient: any) {
-  console.log('Processing Twitter delivery...')
-  
-  // Simulate Twitter posting
-  await new Promise(resolve => setTimeout(resolve, 800))
-  
-  return {
-    success: true,
-    message: 'Content posted to Twitter successfully'
-  }
-}
-
-async function processInstagramDelivery(delivery: DeliverySchedule, supabaseClient: any) {
-  console.log('Processing Instagram delivery...')
-  
-  // Simulate Instagram posting
-  await new Promise(resolve => setTimeout(resolve, 1200))
-  
-  return {
-    success: true,
-    message: 'Content posted to Instagram successfully'
-  }
-}
-
-async function processFacebookDelivery(delivery: DeliverySchedule, supabaseClient: any) {
-  console.log('Processing Facebook delivery...')
-  
-  // Simulate Facebook posting
-  await new Promise(resolve => setTimeout(resolve, 900))
-  
-  return {
-    success: true,
-    message: 'Content posted to Facebook successfully'
-  }
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

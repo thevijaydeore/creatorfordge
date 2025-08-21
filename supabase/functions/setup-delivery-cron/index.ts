@@ -1,3 +1,26 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // This is a placeholder function to document the cron setup.
+  // In Supabase dashboard, set a Scheduled Function to POST to /functions/v1/process-delivery
+  // e.g., every minute or every 5 minutes.
+
+  return new Response(JSON.stringify({
+    message: 'Configure a Supabase Scheduled Function to call process-delivery periodically.',
+    endpoint: '/functions/v1/process-delivery',
+    cadence: '*/1 * * * *',
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+});
+
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
