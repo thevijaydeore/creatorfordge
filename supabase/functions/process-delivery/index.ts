@@ -34,14 +34,16 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (req.method === 'GET') {
-      return new Response(JSON.stringify({ ok: true, message: 'process-delivery is running' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Remove GET diagnostic for security
 
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
+    }
+
+    // Verify JWT (enforced via config), but also ensure request is authenticated.
+    const authHeader = req.headers.get('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
     // Optional overrides for testing: { scheduleId?: string, minutesAhead?: number }

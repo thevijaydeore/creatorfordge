@@ -6,8 +6,10 @@ import { IntegrationSettings } from "@/components/settings/IntegrationSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { SecurityPrivacy } from "@/components/settings/SecurityPrivacy";
 import { User, Palette, Plug, Bell, Shield } from "lucide-react";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export default function Settings() {
+  const { isAdmin } = useAdmin();
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -38,10 +40,12 @@ export default function Settings() {
               <Bell className="h-4 w-4" />
               Notifications
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="security" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Security
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
@@ -60,9 +64,11 @@ export default function Settings() {
             <NotificationSettings />
           </TabsContent>
 
-          <TabsContent value="security" className="space-y-6">
-            <SecurityPrivacy />
-          </TabsContent>
+          {isAdmin && (
+            <TabsContent value="security" className="space-y-6">
+              <SecurityPrivacy />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>

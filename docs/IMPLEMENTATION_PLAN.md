@@ -8,7 +8,7 @@ Status tags: [Done], [In progress], [Next], [Deferred]
 - Onboarding: persist `creator_profiles`, `content_samples`, `delivery_preferences`.
 - Delivery: schedule from Drafts and Delivery Scheduling; Queue shows statuses; edit scheduled deliveries.
 
-### Phase 1 — Delivery UX polish [Next]
+### Phase 1 — Delivery UX polish [In progress]
 - Retry failed deliveries
   - Add “Retry” in Queue to set `status='scheduled'` and `scheduled_for=now()+2m`.
   - Acceptance: item returns to Scheduled; processor can pick it up.
@@ -29,7 +29,7 @@ Status tags: [Done], [In progress], [Next], [Deferred]
 - Feedback loop MVP
   - `draft_feedback` (👍/👎/reason); acceptance rate card on Drafts.
 
-### Phase 4 — Draft editor improvements [Next]
+### Phase 4 — Draft editor improvements [In progress]
 - Edit hashtags/mentions; platform character counts; autosave.
 
 ### Phase 5 — Source intelligence breadth [Next]

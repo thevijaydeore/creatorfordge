@@ -36,7 +36,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.process-delivery]
-verify_jwt = false
+verify_jwt = true
 
 [functions.setup-delivery-cron]
 verify_jwt = false

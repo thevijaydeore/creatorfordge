@@ -15,10 +15,6 @@ export function SecurityPrivacy() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [apiKeys, setApiKeys] = useState([
-    { id: 1, name: "Production API", key: "pk_live_••••••••••••4242", created: "2024-01-15", lastUsed: "2024-01-20" },
-    { id: 2, name: "Development API", key: "pk_test_••••••••••••1234", created: "2024-01-10", lastUsed: "2024-01-19" }
-  ]);
 
   return (
     <div className="space-y-6">
@@ -57,22 +53,14 @@ export function SecurityPrivacy() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-lg border">
-              <div className="p-2 rounded-lg bg-creator-emerald/10">
-                <Key className="h-5 w-5 text-creator-emerald" />
-              </div>
-              <div>
-                <p className="font-medium">API Keys</p>
-                <p className="text-sm text-muted-foreground">{apiKeys.length} active</p>
-              </div>
-            </div>
+            {/* Removed API keys overview from user UI to avoid exposing internals */}
           </div>
         </CardContent>
       </Card>
 
       {/* Security Tabs */}
       <Tabs defaultValue="password" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="h-4 w-4" />
             Password
@@ -80,10 +68,6 @@ export function SecurityPrivacy() {
           <TabsTrigger value="2fa" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             2FA
-          </TabsTrigger>
-          <TabsTrigger value="api-keys" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            API Keys
           </TabsTrigger>
           <TabsTrigger value="privacy" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
@@ -197,47 +181,7 @@ export function SecurityPrivacy() {
           </Card>
         </TabsContent>
 
-        {/* API Keys Tab */}
-        <TabsContent value="api-keys">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>API Key Management</CardTitle>
-                  <CardDescription>
-                    Manage your API keys for third-party integrations
-                  </CardDescription>
-                </div>
-                <Button>
-                  <Key className="h-4 w-4 mr-2" />
-                  Generate New Key
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {apiKeys.map((apiKey) => (
-                <div key={apiKey.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <p className="font-medium">{apiKey.name}</p>
-                    <p className="text-sm text-muted-foreground font-mono">{apiKey.key}</p>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>Created: {apiKey.created}</span>
-                      <span>Last used: {apiKey.lastUsed}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* API Key tab removed for non-admins */}
 
         {/* Privacy Tab */}
         <TabsContent value="privacy">

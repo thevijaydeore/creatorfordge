@@ -33,6 +33,8 @@ export default function Drafts() {
   const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editText, setEditText] = useState("");
+  const [editHashtags, setEditHashtags] = useState("");
+  const [editMentions, setEditMentions] = useState("");
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,12 +140,24 @@ export default function Drafts() {
     setEditingDraft(draft);
     setEditTitle(draft.title || "");
     setEditText(draft.content?.text || "");
+    const tags = Array.isArray(draft.content?.hashtags) ? draft.content.hashtags : [];
+    const mentions = Array.isArray(draft.content?.mentions) ? draft.content.mentions : [];
+    setEditHashtags(tags.join(", "));
+    setEditMentions(mentions.join(", "));
   };
 
   const saveEdit = async () => {
     if (!editingDraft) return;
     try {
-      const updatedContent = { ...(editingDraft.content || {}), text: editText };
+      const parsedTags = editHashtags
+        .split(/[,\n]/)
+        .map(t => t.trim().replace(/^#/, ""))
+        .filter(Boolean);
+      const parsedMentions = editMentions
+        .split(/[,\n]/)
+        .map(m => m.trim().replace(/^@/, ""))
+        .filter(Boolean);
+      const updatedContent = { ...(editingDraft.content || {}), text: editText, hashtags: parsedTags, mentions: parsedMentions };
       const { data, error } = await supabase
         .from('drafts')
         .update({ title: editTitle, content: updatedContent })
@@ -436,9 +450,37 @@ export default function Drafts() {
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
             />
+            {/* Counters based on platform (soft for most, enforced for Twitter) */}
+            {editingDraft && (
+              <div className="text-xs text-muted-foreground flex items-center justify-between">
+                <span>Platform: {editingDraft.platform}</span>
+                {(() => {
+                  const limits: Record<string, number> = { twitter: 280, linkedin: 3000, instagram: 2200 };
+                  const limit = limits[editingDraft.platform] || 0;
+                  if (!limit) return null;
+                  const count = editText.length;
+                  const over = count > limit && editingDraft.platform === 'twitter';
+                  return (
+                    <span className={over ? 'text-destructive' : ''}>
+                      {count}/{limit} {over ? '(over limit)' : ''}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
+            <Input
+              placeholder="#hashtags (comma separated)"
+              value={editHashtags}
+              onChange={(e) => setEditHashtags(e.target.value)}
+            />
+            <Input
+              placeholder="@mentions (comma separated)"
+              value={editMentions}
+              onChange={(e) => setEditMentions(e.target.value)}
+            />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditingDraft(null)}>Cancel</Button>
-              <Button onClick={saveEdit}>Save</Button>
+              <Button onClick={saveEdit} disabled={!!(editingDraft && editingDraft.platform === 'twitter' && editText.length > 280)}>Save</Button>
             </div>
           </div>
         </DialogContent>

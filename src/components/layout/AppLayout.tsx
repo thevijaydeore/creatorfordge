@@ -1,11 +1,14 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CreatorSidebar } from "@/components/creator/sidebar";
+import { useAdmin } from "@/hooks/useAdmin";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  // Admin status can be leveraged by child components if needed later
+  useAdmin();
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full">
