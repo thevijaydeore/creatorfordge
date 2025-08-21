@@ -35,6 +35,8 @@ export default function Drafts() {
   const [editText, setEditText] = useState("");
   const [editHashtags, setEditHashtags] = useState("");
   const [editMentions, setEditMentions] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string>("");
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,6 +151,7 @@ export default function Drafts() {
   const saveEdit = async () => {
     if (!editingDraft) return;
     try {
+      setIsSaving(true);
       const parsedTags = editHashtags
         .split(/[,\n]/)
         .map(t => t.trim().replace(/^#/, ""))
@@ -166,12 +169,47 @@ export default function Drafts() {
         .single();
       if (error) throw error;
       setDrafts(prev => prev.map(d => d.id === editingDraft.id ? data as Draft : d));
+      setLastSavedAt(new Date().toLocaleTimeString());
       setEditingDraft(null);
       toast({ title: 'Saved', description: 'Draft updated.' });
     } catch (e) {
       toast({ title: 'Error', description: 'Failed to save draft.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  // Debounced autosave while editing
+  useEffect(() => {
+    if (!editingDraft) return;
+    const handler = setTimeout(async () => {
+      try {
+        setIsSaving(true);
+        const parsedTags = editHashtags
+          .split(/[,\n]/)
+          .map(t => t.trim().replace(/^#/, ""))
+          .filter(Boolean);
+        const parsedMentions = editMentions
+          .split(/[,\n]/)
+          .map(m => m.trim().replace(/^@/, ""))
+          .filter(Boolean);
+        const updatedContent = { ...(editingDraft.content || {}), text: editText, hashtags: parsedTags, mentions: parsedMentions };
+        const { data, error } = await supabase
+          .from('drafts')
+          .update({ title: editTitle, content: updatedContent })
+          .eq('id', editingDraft.id)
+          .select()
+          .single();
+        if (!error && data) {
+          setDrafts(prev => prev.map(d => d.id === editingDraft.id ? data as Draft : d));
+          setLastSavedAt(new Date().toLocaleTimeString());
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    }, 1200);
+    return () => clearTimeout(handler);
+  }, [editTitle, editText, editHashtags, editMentions, editingDraft]);
 
   const handleSchedule = (draft: Draft) => {
     console.log("Legacy schedule handler called for draft:", draft.id);
@@ -473,14 +511,39 @@ export default function Drafts() {
               value={editHashtags}
               onChange={(e) => setEditHashtags(e.target.value)}
             />
+            {editHashtags.trim() && (
+              <div className="flex flex-wrap gap-1">
+                {editHashtags.split(/[,\n]/).map((t, i) => {
+                  const tag = t.trim().replace(/^#/, "");
+                  if (!tag) return null;
+                  return (
+                    <span key={i} className="text-xs bg-muted px-2 py-1 rounded">#{tag}</span>
+                  );
+                })}
+              </div>
+            )}
             <Input
               placeholder="@mentions (comma separated)"
               value={editMentions}
               onChange={(e) => setEditMentions(e.target.value)}
             />
+            {editMentions.trim() && (
+              <div className="flex flex-wrap gap-1">
+                {editMentions.split(/[,\n]/).map((m, i) => {
+                  const handle = m.trim().replace(/^@/, "");
+                  if (!handle) return null;
+                  return (
+                    <span key={i} className="text-xs bg-muted px-2 py-1 rounded">@{handle}</span>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditingDraft(null)}>Cancel</Button>
               <Button onClick={saveEdit} disabled={!!(editingDraft && editingDraft.platform === 'twitter' && editText.length > 280)}>Save</Button>
+            </div>
+            <div className="text-[10px] text-muted-foreground text-right">
+              {isSaving ? 'Saving…' : lastSavedAt ? `Autosaved at ${lastSavedAt}` : ''}
             </div>
           </div>
         </DialogContent>
