@@ -138,13 +138,44 @@ export const useDeliveryScheduler = () => {
     }
   })
 
+  const runDeliveryProcessor = useMutation({
+    mutationFn: async (params: { minutesAhead?: number; scheduleId?: string }) => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      const { data, error } = await supabase.functions.invoke('process-delivery', {
+        body: { minutesAhead: params.minutesAhead ?? 1, scheduleId: params.scheduleId },
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      })
+      if (error) throw error
+      return data
+    },
+    onSuccess: (data: any) => {
+      const processed = typeof data?.processed === 'number' ? data.processed : 0
+      const results = Array.isArray(data?.results) ? data.results : []
+      const failed = results.filter((r: any) => r.status === 'failed')
+      if (failed.length > 0) {
+        const msg = failed[0]?.error || 'Unknown error'
+        toast.error(`Processor failed for ${failed.length} item(s): ${msg}`)
+      } else {
+        toast.success(`Processor ran: processed ${processed}`)
+      }
+      queryClient.invalidateQueries({ queryKey: ['delivery-queue'] })
+    },
+    onError: (error) => {
+      console.error('Processor error:', error)
+      toast.error(`Processor failed: ${error.message}`)
+    }
+  })
+
   return {
     scheduleDelivery: scheduleDelivery.mutate,
     cancelScheduledDelivery: cancelScheduledDelivery.mutate,
     updateScheduledDelivery: updateScheduledDelivery.mutate,
+    runDeliveryProcessor: runDeliveryProcessor.mutate,
     isScheduling: scheduleDelivery.isPending,
     isCancelling: cancelScheduledDelivery.isPending,
     isUpdating: updateScheduledDelivery.isPending,
+    isRunningProcessor: runDeliveryProcessor.isPending,
     schedulingError: scheduleDelivery.error
   }
 }

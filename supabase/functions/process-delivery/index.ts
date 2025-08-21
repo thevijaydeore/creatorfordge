@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -108,7 +109,12 @@ serve(async (req) => {
         }
 
         if (!brevoApiKey || !brevoFromEmail) {
-          throw new Error('Missing BREVO_API_KEY or BREVO_FROM_EMAIL');
+          const missing: string[] = [];
+          if (!brevoApiKey) missing.push('BREVO_API_KEY');
+          if (!brevoFromEmail) missing.push('BREVO_FROM_EMAIL');
+          // Diagnostic only: surfaced in logs; UI only receives generic error text
+          console.error('Brevo config missing env(s):', missing.join(', '));
+          throw new Error(missing.length ? `Missing ${missing.join(', ')}` : 'Missing BREVO_API_KEY or BREVO_FROM_EMAIL');
         }
 
         const subject = `[CreatorPulse] Scheduled ${item.platform} ${item.content_type}`;

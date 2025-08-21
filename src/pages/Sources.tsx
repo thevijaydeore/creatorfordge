@@ -14,6 +14,11 @@ import { AddRSSSource } from "@/components/sources/AddRSSSource";
 import { AddTagsSource } from "@/components/sources/AddTagsSource";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+import { useContentScraper } from "@/hooks/useContentScraper";
 
 interface Source {
   id: string;
@@ -33,6 +38,10 @@ const Sources = () => {
   const [newSourceType, setNewSourceType] = useState<'twitter' | 'rss' | 'tags'>('twitter');
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { importTweetUrl } = useContentScraper();
+  const [importFor, setImportFor] = useState<string | null>(null);
+  const [tweetUrl, setTweetUrl] = useState("");
 
   // Fetch sources
   const { data: sources = [], isLoading } = useQuery({
@@ -221,6 +230,38 @@ const Sources = () => {
                         sourceId={source.id}
                         syncStatus={source.sync_status}
                       />
+
+                      {source.source_type === 'twitter' && (
+                        <Dialog open={importFor === source.id} onOpenChange={(o) => { if (!o) { setImportFor(null); setTweetUrl(""); } }}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setImportFor(source.id)}>Import URL</Button>
+                          </DialogTrigger>
+                          <DialogContent className="overflow-y-auto max-h-[90vh]">
+                            <DialogHeader>
+                              <DialogTitle>Import Tweet by URL</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-2">
+                              <Label htmlFor="tweet-url">Tweet URL</Label>
+                              <Input id="tweet-url" placeholder="https://twitter.com/username/status/123..." value={tweetUrl} onChange={(e) => setTweetUrl(e.target.value)} />
+                            </div>
+                            <DialogFooter>
+                              <Button variant="ghost" onClick={() => { setImportFor(null); setTweetUrl(""); }}>Cancel</Button>
+                              <Button
+                                onClick={() => {
+                                  if (user?.id && tweetUrl.trim()) {
+                                    importTweetUrl({ sourceId: source.id, userId: user.id, url: tweetUrl.trim() });
+                                    setImportFor(null);
+                                    setTweetUrl("");
+                                  }
+                                }}
+                                disabled={!user?.id || !tweetUrl.trim()}
+                              >
+                                Import
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      )}
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

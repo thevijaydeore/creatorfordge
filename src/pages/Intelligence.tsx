@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTopics } from "@/hooks/useTopics";
 import { EnhancedTopicCard } from "@/components/intelligence/EnhancedTopicCard";
+import { IngestedContentList } from "@/components/content/IngestedContentList";
 
 const Intelligence = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -171,6 +172,17 @@ const Intelligence = () => {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Latest Ingested Content */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Latest Ingested Content</CardTitle>
+          <CardDescription>Most recent items fetched from your sources</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <IngestedContentList />
         </CardContent>
       </Card>
     </div>

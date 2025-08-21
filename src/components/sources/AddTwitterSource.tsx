@@ -3,56 +3,77 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Twitter } from "lucide-react";
-import { useSources } from "@/hooks/useSources";
+import { useContentScraper } from "@/hooks/useContentScraper";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AddTwitterSource() {
-  const [username, setUsername] = useState("");
-  const { createSource, isCreating } = useSources();
+  const [tweetUrl, setTweetUrl] = useState("");
+  const { user } = useAuth();
+  const { importTweetUrl, isImporting } = useContentScraper();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
+    if (!tweetUrl.trim() || !user?.id) return;
+    // Find or create a placeholder source for manual tweet imports
+    let sourceId: string | null = null;
+    const { data: existing, error: findErr } = await supabase
+      .from('sources')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('source_type', 'twitter')
+      .eq('source_name', 'Tweet Imports')
+      .maybeSingle();
 
-    const cleanUsername = username.trim().replace('@', '');
-    
-    createSource({
-      source_type: 'twitter',
-      source_name: `@${cleanUsername}`,
-      source_url: `https://twitter.com/${cleanUsername}`,
-      source_config: { username: cleanUsername },
-    });
+    if (findErr) console.error('Find source error', findErr);
+    sourceId = existing?.id || null;
 
-    setUsername("");
+    if (!sourceId) {
+      const { data: created, error: createErr } = await supabase
+        .from('sources')
+        .insert({
+          user_id: user.id,
+          source_type: 'twitter',
+          source_name: 'Tweet Imports',
+          source_url: null,
+          source_config: { import_mode: 'url' },
+          is_active: true,
+        })
+        .select('id')
+        .single();
+      if (createErr) {
+        console.error('Create source error', createErr);
+        return;
+      }
+      sourceId = created.id;
+    }
+
+    if (sourceId) {
+      importTweetUrl({ sourceId, userId: user.id, url: tweetUrl.trim() });
+      setTweetUrl("");
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="text-center mb-4">
         <Twitter className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-        <h3 className="text-lg font-medium">Track Twitter User</h3>
-        <p className="text-sm text-muted-foreground">
-          Add a Twitter username to analyze their posts and engagement
-        </p>
+        <h3 className="text-lg font-medium">Import Tweet by URL</h3>
+        <p className="text-sm text-muted-foreground">Paste a tweet link to ingest its text.</p>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="twitter-username">Twitter Username</Label>
-        <Input
-          id="twitter-username"
-          placeholder="username (without @)"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
+        <Label htmlFor="tweet-url">Tweet URL</Label>
+        <Input id="tweet-url" placeholder="https://twitter.com/username/status/123..." value={tweetUrl} onChange={(e) => setTweetUrl(e.target.value)} required />
       </div>
       
       <Button 
         type="submit" 
         className="w-full"
-        disabled={isCreating || !username.trim()}
+        disabled={!tweetUrl.trim() || !user?.id || isImporting}
       >
         <Twitter className="h-4 w-4 mr-2" />
-        {isCreating ? "Adding..." : "Add Twitter Source"}
+        {isImporting ? "Importing..." : "Import Tweet"}
       </Button>
     </form>
   );

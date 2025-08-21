@@ -8,14 +8,14 @@ Status tags: [Done], [In progress], [Next], [Deferred]
 - Onboarding: persist `creator_profiles`, `content_samples`, `delivery_preferences`.
 - Delivery: schedule from Drafts and Delivery Scheduling; Queue shows statuses; edit scheduled deliveries.
 
-### Phase 1 — Delivery UX polish [In progress]
+### Phase 1 — Delivery UX polish [Done]
 - Retry failed deliveries
   - Add “Retry” in Queue to set `status='scheduled'` and `scheduled_for=now()+2m`.
   - Acceptance: item returns to Scheduled; processor can pick it up.
 - Queue filters/refresh
   - Manual Refresh; filters by platform/type/date.
 - Timezone consistency
-  - Store UTC; render in user timezone; 9:00 remains 9:00 locally.
+  - Store UTC; render in user timezone; 9:00 remains 9:00 locally. [Note: local rendering added; full normalization scheduled if needed.]
 
 ### Phase 2 — Email delivery MVP (Brevo) [Deferred until sender/domain ready]
 - Edge function `process-delivery` sends via Brevo SMTP API.
@@ -30,11 +30,25 @@ Status tags: [Done], [In progress], [Next], [Deferred]
   - `draft_feedback` (👍/👎/reason); acceptance rate card on Drafts.
 
 ### Phase 4 — Draft editor improvements [In progress]
-- Edit hashtags/mentions; platform character counts; autosave.
+- Edit hashtags/mentions; platform character counts; autosave; visual previews.
 
-### Phase 5 — Source intelligence breadth [Next]
-- Social ingestion: Twitter first, then LinkedIn/Instagram.
-- Source analytics: per‑source daily metrics (posts analyzed, errors).
+### Phase 5 — Social ingestion [In progress]
+- Twitter URL import [Done]
+  - Manual import via tweet URL (oEmbed); stored in `ingested_contents`; visible under Intelligence → Latest Ingested Content.
+  - UI: “Import Tweet by URL” in Sources.
+- Twitter API ingestion [Hardened but Limited]
+  - since_id support, 429 handling with retry-after messaging; however free limits remain restrictive → de‑prioritized.
+- RSS ingestion [Next]
+  - Current: Core path implemented in `content-scraper` → `scrapeRSSFeed`, and Add RSS Source + validate via `validate-rss` function.
+  - Next work:
+    1) QA end‑to‑end (add feed, validate, sync, see items under Intelligence).
+    2) Improve parsing: prefer `<content:encoded>`/full text, sanitize HTML, capture main image into `metadata`.
+    3) Incremental fetch: cache `metrics.last_item_guid_or_date` to avoid re‑ingesting older items.
+    4) UX: add “Sync All RSS Sources” and better per‑source error messages.
+    5) Optional: scheduled sync (Supabase Scheduled Function) for active RSS sources.
+
+### Source analytics [Next]
+- Per‑source daily metrics (posts analyzed, errors, last_sync_at, last_scrape_count).
 
 ### Phase 6 — Delivery expansion [Next]
 - “Run delivery now” (admin) button to invoke `process-delivery` with `scheduleId`.
@@ -75,12 +89,10 @@ Status tags: [Done], [In progress], [Next], [Deferred]
 - Email: deferred until verified sender/domain.
 
 ## Next Up (suggested order)
-1. Retry failed deliveries
-2. Queue filters/refresh + timezone normalization
-3. Rich draft editor (hashtags/mentions, counters)
-4. Real LLM outputs (requires `OPENAI_API_KEY`)
-5. Social ingestion (Twitter)
-6. “Run delivery now” button
-7. KPIs & dashboard cards
+1. RSS ingestion polish: full‑text parsing, incremental fetch, Sync All, QA
+2. Rich draft editor (hashtags/mentions, counters)
+3. Real LLM outputs (requires `OPENAI_API_KEY`)
+4. “Run delivery now” button
+5. Source analytics + KPIs & dashboard cards
 
 

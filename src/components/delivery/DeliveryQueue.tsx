@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 export function DeliveryQueue() {
   const { user } = useAuth();
   const { data: queueItems = [], isLoading, refetch } = useDeliveryQueue(user?.id || '');
-  const { cancelScheduledDelivery, updateScheduledDelivery, isUpdating } = useDeliveryScheduler();
+  const { cancelScheduledDelivery, updateScheduledDelivery, runDeliveryProcessor, isRunningProcessor, isUpdating } = useDeliveryScheduler();
   const [activeTab, setActiveTab] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTime, setEditTime] = useState<string>("09:00");
@@ -140,6 +140,9 @@ export function DeliveryQueue() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => runDeliveryProcessor({ minutesAhead: 15 })}>
+              {isRunningProcessor ? 'Running…' : 'Run delivery now'}
             </Button>
           </div>
         </div>
@@ -279,6 +282,15 @@ export function DeliveryQueue() {
                           onClick={() => cancelScheduledDelivery(item.id)}
                         >
                           <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+
+                      {item.status === 'scheduled' && (
+                        <Button 
+                          variant="ghost" size="sm" title="Run now"
+                          onClick={() => runDeliveryProcessor({ scheduleId: item.id })}
+                        >
+                          <Play className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
