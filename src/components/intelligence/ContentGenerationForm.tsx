@@ -13,14 +13,16 @@ interface ContentGenerationFormProps {
   topicId?: string
   researchId?: string
   onSuccess?: (draft: any) => void
+  initialPlatform?: string
+  initialContentType?: string
 }
 
-export const ContentGenerationForm = ({ topicId, researchId, onSuccess }: ContentGenerationFormProps) => {
+export const ContentGenerationForm = ({ topicId, researchId, onSuccess, initialPlatform, initialContentType }: ContentGenerationFormProps) => {
   const { user } = useAuth()
   const { generateContent, isGenerating } = useContentGeneration()
   
-  const [platform, setPlatform] = useState<string>("")
-  const [contentType, setContentType] = useState<string>("")
+  const [platform, setPlatform] = useState<string>(initialPlatform || "")
+  const [contentType, setContentType] = useState<string>(initialContentType || "")
   const [prompt, setPrompt] = useState("")
 
   const platforms = [
@@ -47,6 +49,17 @@ export const ContentGenerationForm = ({ topicId, researchId, onSuccess }: Conten
       { value: "text_post", label: "Text Post" }
     ]
   }
+
+  // Adjust default content type when platform is preset
+  React.useEffect(() => {
+    if (initialPlatform) {
+      const list = (contentTypes as any)[initialPlatform] as Array<{value:string,label:string}> | undefined
+      if (list && list.length > 0) {
+        setContentType(initialContentType || list[0].value)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPlatform])
 
   const handleGenerate = () => {
     if (!user?.id || !platform || !contentType) return

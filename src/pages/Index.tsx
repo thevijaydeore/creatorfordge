@@ -35,11 +35,11 @@ const Index = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <button className="glass-button px-4 py-2 text-sm font-medium">
+                <button className="glass-button px-4 py-2 text-sm font-medium" onClick={() => navigate('/intelligence')}>
                   <Sparkles className="w-4 h-4 mr-2" />
                   AI Studio
                 </button>
-                <button className="bg-creator-gradient px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground hover-lift">
+                <button className="bg-creator-gradient px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground hover-lift" onClick={() => navigate('/intelligence?platform=linkedin')}>
                   <Zap className="w-4 h-4 mr-2" />
                   Quick Generate
                 </button>
@@ -67,7 +67,7 @@ const Index = () => {
                     3 trending drafts generated, 2 pending reviews, and insights from 12 sources analyzed.
                   </p>
                   <div className="flex items-center space-x-4">
-                    <button className="bg-creator-gradient px-6 py-3 rounded-lg font-medium text-primary-foreground hover-lift">
+                    <button className="bg-creator-gradient px-6 py-3 rounded-lg font-medium text-primary-foreground hover-lift" onClick={() => navigate('/drafts')}>
                       Review Drafts
                     </button>
                     <button 
@@ -128,22 +128,22 @@ const Index = () => {
               <div className="glass-card p-6">
                 <h3 className="text-lg font-semibold mb-6 text-card-foreground">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <button className="glass-button p-4 text-left space-y-2 hover-lift">
+                  <button className="glass-button p-4 text-left space-y-2 hover-lift" onClick={() => navigate('/intelligence?platform=twitter')}>
                     <Sparkles className="w-6 h-6 text-creator-violet" />
-                    <p className="font-medium text-sm">Generate Thread</p>
-                    <p className="text-xs text-muted-foreground">Create Twitter thread from trending topic</p>
+                    <p className="font-medium text-sm">Generate Twitter Post</p>
+                    <p className="text-xs text-muted-foreground">Create Twitter post from a topic</p>
                   </button>
-                  <button className="glass-button p-4 text-left space-y-2 hover-lift">
+                  <button className="glass-button p-4 text-left space-y-2 hover-lift" onClick={() => navigate('/intelligence')}>
                     <TrendingUp className="w-6 h-6 text-creator-cyan" />
                     <p className="font-medium text-sm">Trend Analysis</p>
                     <p className="text-xs text-muted-foreground">Analyze current trending topics</p>
                   </button>
-                  <button className="glass-button p-4 text-left space-y-2 hover-lift">
+                  <button className="glass-button p-4 text-left space-y-2 opacity-60 cursor-not-allowed" disabled>
                     <Users className="w-6 h-6 text-creator-emerald" />
                     <p className="font-medium text-sm">Audience Insights</p>
-                    <p className="text-xs text-muted-foreground">View detailed audience analytics</p>
+                    <p className="text-xs text-muted-foreground">Coming soon</p>
                   </button>
-                  <button className="glass-button p-4 text-left space-y-2 hover-lift">
+                  <button className="glass-button p-4 text-left space-y-2 hover-lift" onClick={() => navigate('/delivery')}>
                     <Zap className="w-6 h-6 text-creator-orange" />
                     <p className="font-medium text-sm">Pulse Schedule</p>
                     <p className="text-xs text-muted-foreground">Configure daily delivery settings</p>
