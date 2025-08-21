@@ -46,7 +46,7 @@ export function CreatorSidebar() {
     <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
       <SidebarContent className="bg-sidebar border-r border-sidebar-border">
         {/* Logo */}
-        <div className="p-6 border-b border-sidebar-border">
+        <div className={collapsed ? "p-2 border-b border-sidebar-border" : "p-6 border-b border-sidebar-border"}>
           {!collapsed ? (
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 rounded-lg bg-creator-gradient flex items-center justify-center">
@@ -55,8 +55,8 @@ export function CreatorSidebar() {
               <span className="text-xl font-bold creator-text-gradient">CreatorPulse</span>
             </div>
           ) : (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-creator-gradient flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 mx-auto rounded-lg bg-creator-gradient flex items-center justify-center">
+              <Zap className="w-6 h-6 text-primary-foreground" />
             </div>
           )}
         </div>
