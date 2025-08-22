@@ -3,24 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
-
-export interface TrendResearch {
-  id: string
-  user_id: string
-  title: string
-  research_data: Record<string, any>
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  requested_at: string
-  generated_at: string | null
-  n8n_execution_id: string | null
-  is_selected: boolean
-  priority_score: number
-  categories: string[]
-  error_message: string | null
-  retry_count: number
-  created_at: string
-  updated_at: string
-}
+import { TrendResearch } from '@/types/trend-research'
 
 interface TriggerTrendResearchParams {
   title: string
@@ -80,7 +63,12 @@ export const useTrendResearchList = () => {
         .order('requested_at', { ascending: false })
 
       if (error) throw error
-      return data || []
+      
+      // Type cast the research_data from Json to Record<string, any>
+      return (data || []).map(item => ({
+        ...item,
+        research_data: item.research_data as Record<string, any>
+      }))
     },
     enabled: !!user
   })
