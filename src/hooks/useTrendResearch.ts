@@ -64,10 +64,15 @@ export const useTrendResearchList = () => {
 
       if (error) throw error
       
-      // Type cast the research_data from Json to Record<string, any>
+      // Properly type cast and handle nullable fields
       return (data || []).map(item => ({
         ...item,
-        research_data: item.research_data as Record<string, any>
+        research_data: item.research_data as Record<string, any>,
+        status: item.status as 'pending' | 'processing' | 'completed' | 'failed',
+        categories: item.categories || [],
+        error_message: item.error_message || null,
+        generated_at: item.generated_at || null,
+        n8n_execution_id: item.n8n_execution_id || null
       }))
     },
     enabled: !!user
