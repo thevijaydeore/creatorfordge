@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -51,15 +51,14 @@ export const ContentGenerationForm = ({ topicId, researchId, onSuccess, initialP
   }
 
   // Adjust default content type when platform is preset
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialPlatform) {
       const list = (contentTypes as any)[initialPlatform] as Array<{value:string,label:string}> | undefined
       if (list && list.length > 0) {
         setContentType(initialContentType || list[0].value)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPlatform])
+  }, [initialPlatform, initialContentType])
 
   const handleGenerate = () => {
     if (!user?.id || !platform || !contentType) return
