@@ -551,6 +551,60 @@ export type Database = {
           },
         ]
       }
+      trend_research: {
+        Row: {
+          categories: string[] | null
+          created_at: string
+          error_message: string | null
+          generated_at: string | null
+          id: string
+          is_selected: boolean
+          n8n_execution_id: string | null
+          priority_score: number | null
+          requested_at: string
+          research_data: Json
+          retry_count: number | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          categories?: string[] | null
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          is_selected?: boolean
+          n8n_execution_id?: string | null
+          priority_score?: number | null
+          requested_at?: string
+          research_data?: Json
+          retry_count?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          categories?: string[] | null
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          is_selected?: boolean
+          n8n_execution_id?: string | null
+          priority_score?: number | null
+          requested_at?: string
+          research_data?: Json
+          retry_count?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_onboarding_progress: {
         Row: {
           completed_at: string | null
@@ -597,7 +651,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_trigger_trend_research: {
+        Args: { p_minutes?: number; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       delivery_content_type_enum:

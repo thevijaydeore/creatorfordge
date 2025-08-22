@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTopics } from "@/hooks/useTopics";
 import { EnhancedTopicCard } from "@/components/intelligence/EnhancedTopicCard";
 import { IngestedContentList } from "@/components/content/IngestedContentList";
+import { TrendResearchSection } from "@/components/intelligence/TrendResearchSection";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ContentGenerationForm } from "@/components/intelligence/ContentGenerationForm";
 import { useTopicResearch, useTopicResearchData } from "@/hooks/useTopicResearch";
@@ -94,6 +95,9 @@ const Intelligence = () => {
           </Button>
         </div>
       </div>
+
+      {/* Trend Research Section - NEW */}
+      <TrendResearchSection />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
