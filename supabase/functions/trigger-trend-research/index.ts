@@ -5,8 +5,8 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const n8nWebhookUrl = Deno.env.get('N8N_WEBHOOK_URL')!
-const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET')!
+// Updated n8n webhook URL
+const n8nWebhookUrl = 'https://n8n.example.com/webhook-test/749b6d5f-82ff-4334-9368-646fdb9c3dd8'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -48,7 +48,7 @@ serve(async (req) => {
       })
     }
 
-    // Generate n8n execution ID for idempotency
+    // Generate execution ID for idempotency
     const executionId = `${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
     // Insert pending record
@@ -69,42 +69,33 @@ serve(async (req) => {
       return new Response('Failed to create trend research record', { status: 500, headers: corsHeaders })
     }
 
-    // Create HMAC signature for n8n webhook
-    const payload = JSON.stringify({
+    // Prepare payload for n8n webhook (no security for now)
+    const payload = {
       execution_id: executionId,
       user_id: user.id,
       trend_id: trendRecord.id,
       title,
       categories
-    })
+    }
 
-    const encoder = new TextEncoder()
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(n8nWebhookSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
-    
-    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
-    const signatureHex = Array.from(new Uint8Array(signature))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
+    console.log('Triggering n8n webhook:', { url: n8nWebhookUrl, payload })
 
     // Trigger n8n workflow
     try {
       const n8nResponse = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-Signature': `sha256=${signatureHex}`
+          'Content-Type': 'application/json'
         },
-        body: payload
+        body: JSON.stringify(payload)
       })
 
+      console.log('n8n response status:', n8nResponse.status)
+      
       if (!n8nResponse.ok) {
-        throw new Error(`n8n webhook failed: ${n8nResponse.status}`)
+        const errorText = await n8nResponse.text()
+        console.error('n8n webhook failed:', n8nResponse.status, errorText)
+        throw new Error(`n8n webhook failed: ${n8nResponse.status} - ${errorText}`)
       }
 
       // Update status to processing
@@ -112,6 +103,8 @@ serve(async (req) => {
         .from('trend_research')
         .update({ status: 'processing' })
         .eq('id', trendRecord.id)
+
+      console.log('Trend research triggered successfully:', executionId)
 
       return new Response(JSON.stringify({
         success: true,

@@ -5,7 +5,6 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET')!
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,34 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    // Verify HMAC signature instead of JWT (this is a webhook from n8n)
-    const signature = req.headers.get('X-Signature')
-    if (!signature) {
-      return new Response('Missing signature', { status: 401, headers: corsHeaders })
-    }
-
-    const body = await req.text()
+    // No security verification for now - just process the webhook data
+    const data = await req.json()
+    console.log('Received n8n webhook data:', data)
     
-    // Verify HMAC
-    const encoder = new TextEncoder()
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(n8nWebhookSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify']
-    )
-    
-    const expectedSignature = signature.replace('sha256=', '')
-    const signatureBytes = new Uint8Array(expectedSignature.match(/.{2}/g)!.map(byte => parseInt(byte, 16)))
-    
-    const isValid = await crypto.subtle.verify('HMAC', key, signatureBytes, encoder.encode(body))
-    
-    if (!isValid) {
-      return new Response('Invalid signature', { status: 401, headers: corsHeaders })
-    }
-
-    const data = JSON.parse(body)
     const { execution_id, research_data, status, error_message, priority_score } = data
 
     if (!execution_id) {
@@ -52,7 +27,7 @@ serve(async (req) => {
       auth: { persistSession: false }
     })
 
-    // Upsert with idempotency based on n8n_execution_id
+    // Update record based on execution_id
     const updateData: any = {
       status: status || 'completed',
       generated_at: new Date().toISOString(),
@@ -68,6 +43,8 @@ serve(async (req) => {
     if (priority_score !== undefined) {
       updateData.priority_score = priority_score
     }
+
+    console.log('Updating trend research record:', { execution_id, updateData })
 
     const { data: updatedRecord, error: updateError } = await supabase
       .from('trend_research')
@@ -90,6 +67,8 @@ serve(async (req) => {
         headers: corsHeaders 
       })
     }
+
+    console.log('Successfully updated trend research:', updatedRecord.id)
 
     return new Response(JSON.stringify({
       success: true,
