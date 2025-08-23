@@ -5,8 +5,8 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-// Updated n8n webhook URL
-const n8nWebhookUrl = 'https://n8n.example.com/webhook-test/749b6d5f-82ff-4334-9368-646fdb9c3dd8'
+// Updated n8n webhook URL to ngrok
+const n8nWebhookUrl = 'https://e6c0aba165b2.ngrok-free.app/webhook-test/749b6d5f-82ff-4334-9368-646fdb9c3dd8'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
