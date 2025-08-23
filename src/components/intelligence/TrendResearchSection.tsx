@@ -1,5 +1,6 @@
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,7 @@ export const TrendResearchSection = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [categories, setCategories] = useState("")
+  const navigate = useNavigate()
   
   const { triggerResearch, isTriggering } = useTrendResearch()
   const { data: trendResearch = [], isLoading } = useTrendResearchList()
@@ -187,7 +189,7 @@ export const TrendResearchSection = () => {
                 {trend.status === 'completed' && (
                   <div className="text-right">
                     <div className="text-sm font-medium">Score: {trend.priority_score}/10</div>
-                    <Button variant="outline" size="sm" className="mt-2">
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate(`/trends/${trend.id}`)}>
                       Use for Content
                     </Button>
                   </div>

@@ -15,6 +15,7 @@ import Delivery from "./pages/Delivery";
 import Settings from "./pages/Settings";
 import VoiceTraining from "./pages/VoiceTraining";
 import Intelligence from "./pages/Intelligence";
+import TrendDetails from "./pages/TrendDetails";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 
@@ -36,6 +37,7 @@ const App = () => (
               {/* App routes with sidebar layout */}
               <Route path="/dashboard" element={<AppLayout><Index /></AppLayout>} />
               <Route path="/intelligence" element={<AppLayout><Intelligence /></AppLayout>} />
+              <Route path="/trends/:id" element={<AppLayout><TrendDetails /></AppLayout>} />
               <Route path="/sources" element={<AppLayout><Sources /></AppLayout>} />
               <Route path="/drafts" element={<AppLayout><Drafts /></AppLayout>} />
               <Route path="/delivery" element={<AppLayout><Delivery /></AppLayout>} />
